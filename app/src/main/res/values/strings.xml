@@ -89,6 +89,7 @@
     <string name="call_recording_failed">Recording failed</string>
     <string name="call_recording_path">Recordings storage path</string>
     <string name="call_recording_path_default">Default (app storage)</string>
+    <string name="call_recording_path_change">Choose different folder</string>
 
     <!-- Auto Answer -->
     <string name="auto_answer">Auto Answer</string>

@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.view.Menu
 import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.documentfile.provider.DocumentFile
 import com.simplemobiletools.commons.activities.ManageBlockedNumbersActivity
 import com.simplemobiletools.commons.dialogs.ChangeDateTimeFormatDialog
 import com.simplemobiletools.commons.dialogs.FeatureLockedDialog
@@ -49,6 +50,18 @@ class SettingsActivity : SimpleActivity() {
             RecentsHelper(this).getRecentCalls(false, Int.MAX_VALUE) { recents ->
                 exportCallHistory(recents, uri)
             }
+        }
+    }
+
+    private val pickRecordingFolder = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            // Take persistable permission so we can write to this folder across reboots
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            config.callRecordingPath = uri.toString()
+            updateRecordingPathLabel()
         }
     }
 
@@ -425,38 +438,56 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun setupCallRecordingPath() {
-        val currentPath = config.callRecordingPath
-        binding.settingsCallRecordingPath.text = if (currentPath.isEmpty()) {
-            getString(R.string.call_recording_path_default)
-        } else {
-            currentPath
-        }
+        updateRecordingPathLabel()
 
         binding.settingsCallRecordingPathHolder.setOnClickListener {
-            val editText = EditText(this).apply {
-                setText(config.callRecordingPath)
-                hint = "/storage/emulated/0/CallRecordings"
-                setPadding(40, 30, 40, 30)
-                isSingleLine = true
-            }
+            if (config.callRecordingPath.isEmpty()) {
+                // No custom path set — launch folder picker directly
+                pickRecordingFolder.launch(null)
+            } else {
+                // Already has custom path — offer to change or reset
+                val items = arrayListOf(
+                    RadioItem(0, getString(R.string.call_recording_path_change)),
+                    RadioItem(1, getString(R.string.call_recording_path_default))
+                )
 
-            AlertDialog.Builder(this)
-                .setTitle(getString(R.string.call_recording_path))
-                .setView(editText)
-                .setPositiveButton(R.string.ok) { _, _ ->
-                    config.callRecordingPath = editText.text.toString().trim()
-                    binding.settingsCallRecordingPath.text = if (config.callRecordingPath.isEmpty()) {
-                        getString(R.string.call_recording_path_default)
-                    } else {
-                        config.callRecordingPath
+                RadioGroupDialog(this@SettingsActivity, items, -1) {
+                    when (it as Int) {
+                        0 -> {
+                            // Try to open picker at current folder
+                            val currentUri = Uri.parse(config.callRecordingPath)
+                            pickRecordingFolder.launch(currentUri)
+                        }
+                        1 -> {
+                            // Release persistable permissions for the old URI
+                            try {
+                                val oldUri = Uri.parse(config.callRecordingPath)
+                                contentResolver.releasePersistableUriPermission(
+                                    oldUri,
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                                )
+                            } catch (_: Exception) {}
+                            config.callRecordingPath = ""
+                            updateRecordingPathLabel()
+                        }
                     }
                 }
-                .setNegativeButton(R.string.cancel, null)
-                .setNeutralButton(R.string.call_recording_path_default) { _, _ ->
-                    config.callRecordingPath = ""
-                    binding.settingsCallRecordingPath.text = getString(R.string.call_recording_path_default)
-                }
-                .show()
+            }
+        }
+    }
+
+    private fun updateRecordingPathLabel() {
+        val uriString = config.callRecordingPath
+        binding.settingsCallRecordingPath.text = if (uriString.isEmpty()) {
+            getString(R.string.call_recording_path_default)
+        } else {
+            try {
+                val uri = Uri.parse(uriString)
+                val docFile = DocumentFile.fromTreeUri(this, uri)
+                docFile?.name ?: uriString
+            } catch (_: Exception) {
+                uriString
+            }
         }
     }
 

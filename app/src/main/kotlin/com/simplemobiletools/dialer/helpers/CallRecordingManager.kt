@@ -2,8 +2,11 @@ package com.simplemobiletools.dialer.helpers
 
 import android.content.Context
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.ParcelFileDescriptor
+import androidx.documentfile.provider.DocumentFile
 import com.simplemobiletools.dialer.extensions.config
 import java.io.File
 import java.text.SimpleDateFormat
@@ -12,15 +15,13 @@ import java.util.*
 class CallRecordingManager(private val context: Context) {
     private var mediaRecorder: MediaRecorder? = null
     private var currentRecordingFile: File? = null
+    private var currentRecordingUri: Uri? = null
+    private var currentRecordingName: String? = null
+    private var parcelFd: ParcelFileDescriptor? = null
     private var isRecording = false
 
-    fun getRecordingsDir(): File {
-        val customPath = context.config.callRecordingPath
-        val dir = if (customPath.isNotEmpty()) {
-            File(customPath)
-        } else {
-            File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
-        }
+    private fun getDefaultRecordingsDir(): File {
+        val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
         if (!dir.exists()) {
             dir.mkdirs()
         }
@@ -34,7 +35,7 @@ class CallRecordingManager(private val context: Context) {
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
             val sanitizedNumber = phoneNumber.replace(Regex("[^0-9+]"), "")
             val filename = "call_${sanitizedNumber}_$timestamp.m4a"
-            currentRecordingFile = File(getRecordingsDir(), filename)
+            currentRecordingName = filename
 
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 MediaRecorder(context)
@@ -42,6 +43,39 @@ class CallRecordingManager(private val context: Context) {
                 @Suppress("DEPRECATION")
                 MediaRecorder()
             }
+
+            val customUriString = context.config.callRecordingPath
+            if (customUriString.isNotEmpty()) {
+                // Use SAF DocumentFile for custom folder
+                val treeUri = Uri.parse(customUriString)
+                val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
+                if (treeDoc != null && treeDoc.canWrite()) {
+                    val newDoc = treeDoc.createFile("audio/mp4", filename)
+                    if (newDoc != null) {
+                        currentRecordingUri = newDoc.uri
+                        parcelFd = context.contentResolver.openFileDescriptor(newDoc.uri, "rw")
+
+                        mediaRecorder?.apply {
+                            setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+                            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                            setAudioSamplingRate(44100)
+                            setAudioEncodingBitRate(128000)
+                            setOutputFile(parcelFd!!.fileDescriptor)
+                            prepare()
+                            start()
+                        }
+
+                        isRecording = true
+                        return true
+                    }
+                }
+                // If SAF folder is not writable, fall through to default
+            }
+
+            // Default: use app-private storage
+            currentRecordingFile = File(getDefaultRecordingsDir(), filename)
+            currentRecordingUri = null
 
             mediaRecorder?.apply {
                 setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
@@ -63,10 +97,10 @@ class CallRecordingManager(private val context: Context) {
         }
     }
 
-    fun stopRecording(): File? {
+    fun stopRecording(): String? {
         if (!isRecording) return null
 
-        val file = currentRecordingFile
+        val name = currentRecordingName
         try {
             mediaRecorder?.apply {
                 stop()
@@ -76,16 +110,23 @@ class CallRecordingManager(private val context: Context) {
             e.printStackTrace()
         }
 
+        try {
+            parcelFd?.close()
+        } catch (_: Exception) {}
+
         cleanup()
-        return if (file?.exists() == true && file.length() > 0) file else null
+
+        // Return the filename for display in call summary
+        return name
     }
 
     private fun cleanup() {
         mediaRecorder = null
+        parcelFd = null
         isRecording = false
     }
 
     fun isCurrentlyRecording() = isRecording
 
-    fun getCurrentRecordingFile() = currentRecordingFile
+    fun getCurrentRecordingName() = currentRecordingName
 }

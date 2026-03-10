@@ -15,7 +15,6 @@ import com.simplemobiletools.dialer.extensions.getStateCompat
 import com.simplemobiletools.dialer.extensions.isOutgoing
 import com.simplemobiletools.dialer.extensions.powerManager
 import com.simplemobiletools.dialer.helpers.*
-import java.io.File
 
 class CallService : InCallService() {
     private val callNotificationManager by lazy { CallNotificationManager(this) }
@@ -27,7 +26,7 @@ class CallService : InCallService() {
     // Track per-call state
     private var currentCallNumber = ""
     private var currentCallName = ""
-    private var currentRecordingFile: File? = null
+    private var currentRecordingName: String? = null
     private var callStartTimeMs = 0L
     private var wasAutoAnswered = false
 
@@ -170,7 +169,7 @@ class CallService : InCallService() {
             val number = currentCallNumber.ifEmpty { "unknown" }
             val success = callRecordingManager.startRecording(number)
             if (!success) {
-                currentRecordingFile = null
+                currentRecordingName = null
             }
         }
     }
@@ -180,12 +179,12 @@ class CallService : InCallService() {
         greetingManager.stopGreeting()
 
         // Stop recording
-        val recordingFile = if (callRecordingManager.isCurrentlyRecording()) {
+        val recordingName = if (callRecordingManager.isCurrentlyRecording()) {
             callRecordingManager.stopRecording()
         } else {
             null
         }
-        currentRecordingFile = recordingFile
+        currentRecordingName = recordingName
 
         // Calculate duration
         val durationSeconds = if (callStartTimeMs > 0) {
@@ -201,7 +200,7 @@ class CallService : InCallService() {
                 contactName = name,
                 phoneNumber = currentCallNumber,
                 durationSeconds = durationSeconds,
-                recordingFile = recordingFile
+                recordingName = recordingName
             )
         }
 
@@ -209,7 +208,7 @@ class CallService : InCallService() {
         callStartTimeMs = 0L
         currentCallNumber = ""
         currentCallName = ""
-        currentRecordingFile = null
+        currentRecordingName = null
         wasAutoAnswered = false
     }
 }
