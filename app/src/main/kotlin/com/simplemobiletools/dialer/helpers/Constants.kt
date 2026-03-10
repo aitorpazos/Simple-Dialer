@@ -20,12 +20,17 @@ const val DIALPAD_BEEPS = "dialpad_beeps"
 const val HIDE_DIALPAD_NUMBERS = "hide_dialpad_numbers"
 const val ALWAYS_SHOW_FULLSCREEN = "always_show_fullscreen"
 const val CALL_RECORDING_ENABLED = "call_recording_enabled"
+const val CALL_RECORDING_PATH = "call_recording_path"
 const val AUTO_ANSWER_MODE = "auto_answer_mode"
+const val AUTO_ANSWER_GREETING = "auto_answer_greeting"
 
 // Auto-answer mode values
 const val AUTO_ANSWER_NONE = 0
 const val AUTO_ANSWER_ALL = 1
 const val AUTO_ANSWER_UNKNOWN = 2
+
+// Default greeting for auto-answer TTS
+const val DEFAULT_AUTO_ANSWER_GREETING = "Hello, this call is being answered automatically. Please leave your message after the tone."
 
 const val ALL_TABS_MASK = TAB_CONTACTS or TAB_FAVORITES or TAB_CALL_HISTORY
 

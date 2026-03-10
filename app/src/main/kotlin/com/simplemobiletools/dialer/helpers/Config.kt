@@ -94,7 +94,15 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getBoolean(CALL_RECORDING_ENABLED, false)
         set(callRecordingEnabled) = prefs.edit().putBoolean(CALL_RECORDING_ENABLED, callRecordingEnabled).apply()
 
+    var callRecordingPath: String
+        get() = prefs.getString(CALL_RECORDING_PATH, "") ?: ""
+        set(callRecordingPath) = prefs.edit().putString(CALL_RECORDING_PATH, callRecordingPath).apply()
+
     var autoAnswerMode: Int
         get() = prefs.getInt(AUTO_ANSWER_MODE, AUTO_ANSWER_NONE)
         set(autoAnswerMode) = prefs.edit().putInt(AUTO_ANSWER_MODE, autoAnswerMode).apply()
+
+    var autoAnswerGreeting: String
+        get() = prefs.getString(AUTO_ANSWER_GREETING, DEFAULT_AUTO_ANSWER_GREETING) ?: DEFAULT_AUTO_ANSWER_GREETING
+        set(autoAnswerGreeting) = prefs.edit().putString(AUTO_ANSWER_GREETING, autoAnswerGreeting).apply()
 }

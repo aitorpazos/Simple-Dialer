@@ -87,6 +87,8 @@
     <string name="call_recording_started">Recording started</string>
     <string name="call_recording_stopped">Recording saved</string>
     <string name="call_recording_failed">Recording failed</string>
+    <string name="call_recording_path">Recordings storage path</string>
+    <string name="call_recording_path_default">Default (app storage)</string>
 
     <!-- Auto Answer -->
     <string name="auto_answer">Auto Answer</string>
@@ -95,6 +97,11 @@
     <string name="auto_answer_all">All calls</string>
     <string name="auto_answer_unknown">Unknown callers only</string>
     <string name="auto_answer_active">Auto-answering call…</string>
+    <string name="auto_answer_greeting">Auto-answer greeting prompt</string>
+    <string name="auto_answer_greeting_hint">Text spoken to the caller when auto-answering</string>
+    <string name="preview_greeting">🔊 Listen to greeting preview</string>
+    <string name="preview_greeting_playing">Playing greeting…</string>
+    <string name="greeting_empty">Greeting text is empty</string>
 
     <!-- Call Summary -->
     <string name="call_summary_title">Call ended: %s</string>

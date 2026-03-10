@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Environment
+import com.simplemobiletools.dialer.extensions.config
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -14,7 +15,12 @@ class CallRecordingManager(private val context: Context) {
     private var isRecording = false
 
     fun getRecordingsDir(): File {
-        val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
+        val customPath = context.config.callRecordingPath
+        val dir = if (customPath.isNotEmpty()) {
+            File(customPath)
+        } else {
+            File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
+        }
         if (!dir.exists()) {
             dir.mkdirs()
         }
