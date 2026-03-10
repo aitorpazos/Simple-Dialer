@@ -42,12 +42,14 @@ jobs:
 
       - name: Create keystore.properties
         run: |
-          cat > keystore.properties <<EOF
+          cat > keystore.properties <<'EOF'
           storeFile=../release.keystore
           storePassword=android
           keyAlias=release
           keyPassword=android
           EOF
+          # Strip leading whitespace from heredoc
+          sed -i 's/^[[:space:]]*//' keystore.properties
 
       - name: Build release APK
         run: ./gradlew assembleCoreRelease
