@@ -31,26 +31,6 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
           restore-keys: gradle-
 
-      - name: Generate signing keystore
-        run: |
-          keytool -genkeypair -v \
-            -keystore release.keystore \
-            -alias release \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android -keypass android \
-            -dname "CN=Smart Dialer, OU=Dev, O=Dev, L=Unknown, ST=Unknown, C=US"
-
-      - name: Create keystore.properties
-        run: |
-          cat > keystore.properties <<'EOF'
-          storeFile=../release.keystore
-          storePassword=android
-          keyAlias=release
-          keyPassword=android
-          EOF
-          # Strip leading whitespace from heredoc
-          sed -i 's/^[[:space:]]*//' keystore.properties
-
       - name: Build release APK
         run: ./gradlew assembleCoreRelease
 
@@ -65,17 +45,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: Smart Dialer ${{ steps.version.outputs.tag }}
+          name: Simple Dialer ${{ steps.version.outputs.tag }}
           body: |
-            ## Smart Dialer ${{ steps.version.outputs.tag }}
+            ## Simple Dialer ${{ steps.version.outputs.tag }}
 
             Fork of Simple Dialer with added features:
-            - 📞 **Call Recording** — Record all calls automatically
+            - 📞 **Call Recording** — Record all calls with configurable storage path
             - 🤖 **Auto-Answer** — Automatically answer calls (all / unknown callers / disabled)
-            - 📋 **Call Summary** — Get a notification summary after each call
+            - 💬 **Custom Greeting** — Configurable TTS greeting for auto-answered calls
+            - 🔊 **Greeting Preview** — Listen to what callers will hear
+            - 📋 **Call Summary** — Notification summary after each call
 
             ### Install
-            Download the **debug APK** (works on all devices without signing issues) or the **release APK** (signed, minified).
+            Download the **release APK** (signed, minified) — updates from previous releases work seamlessly.
+
+            ⚠️ **If upgrading from v1.1.0 or earlier**, you must uninstall first (signing key changed). Future updates from this version onward will work without uninstalling.
           files: |
             app/build/outputs/apk/core/release/*.apk
             app/build/outputs/apk/core/debug/*.apk

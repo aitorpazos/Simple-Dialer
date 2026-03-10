@@ -1,6 +1,4 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.konan.properties.Properties
-import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android)
@@ -11,12 +9,6 @@ plugins {
 
 base {
     archivesName.set("dialer")
-}
-
-val keystorePropertiesFile: File = rootProject.file("keystore.properties")
-val keystoreProperties = Properties()
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -31,13 +23,12 @@ android {
     }
 
     signingConfigs {
-        if (keystorePropertiesFile.exists()) {
-            register("release") {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-            }
+        register("release") {
+            storeFile = rootProject.file("keystores/release.p12")
+            storePassword = "android"
+            keyAlias = "release"
+            keyPassword = "android"
+            storeType = "PKCS12"
         }
     }
 
@@ -56,9 +47,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
