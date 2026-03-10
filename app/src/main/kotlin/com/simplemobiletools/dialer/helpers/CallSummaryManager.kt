@@ -6,7 +6,6 @@ import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.simplemobiletools.dialer.R
-import java.io.File
 
 class CallSummaryManager(private val context: Context) {
     companion object {
@@ -15,7 +14,7 @@ class CallSummaryManager(private val context: Context) {
         private var notificationCounter = 0
     }
 
-    fun showCallSummary(contactName: String, phoneNumber: String, durationSeconds: Int, recordingFile: File?) {
+    fun showCallSummary(contactName: String, phoneNumber: String, durationSeconds: Int, recordingName: String?) {
         createNotificationChannel()
 
         val durationText = formatDuration(durationSeconds)
@@ -26,8 +25,8 @@ class CallSummaryManager(private val context: Context) {
         if (phoneNumber.isNotEmpty() && phoneNumber != contactName) {
             contentLines.add(context.getString(R.string.call_summary_number, phoneNumber))
         }
-        if (recordingFile != null) {
-            contentLines.add(context.getString(R.string.call_summary_recorded, recordingFile.name))
+        if (recordingName != null) {
+            contentLines.add(context.getString(R.string.call_summary_recorded, recordingName))
         }
 
         val bigTextStyle = NotificationCompat.BigTextStyle()
