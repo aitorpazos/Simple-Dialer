@@ -19,6 +19,13 @@ const val DIALPAD_VIBRATION = "dialpad_vibration"
 const val DIALPAD_BEEPS = "dialpad_beeps"
 const val HIDE_DIALPAD_NUMBERS = "hide_dialpad_numbers"
 const val ALWAYS_SHOW_FULLSCREEN = "always_show_fullscreen"
+const val CALL_RECORDING_ENABLED = "call_recording_enabled"
+const val AUTO_ANSWER_MODE = "auto_answer_mode"
+
+// Auto-answer mode values
+const val AUTO_ANSWER_NONE = 0
+const val AUTO_ANSWER_ALL = 1
+const val AUTO_ANSWER_UNKNOWN = 2
 
 const val ALL_TABS_MASK = TAB_CONTACTS or TAB_FAVORITES or TAB_CALL_HISTORY
 
