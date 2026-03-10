@@ -89,4 +89,12 @@ class Config(context: Context) : BaseConfig(context) {
     var alwaysShowFullscreen: Boolean
         get() = prefs.getBoolean(ALWAYS_SHOW_FULLSCREEN, false)
         set(alwaysShowFullscreen) = prefs.edit().putBoolean(ALWAYS_SHOW_FULLSCREEN, alwaysShowFullscreen).apply()
+
+    var callRecordingEnabled: Boolean
+        get() = prefs.getBoolean(CALL_RECORDING_ENABLED, false)
+        set(callRecordingEnabled) = prefs.edit().putBoolean(CALL_RECORDING_ENABLED, callRecordingEnabled).apply()
+
+    var autoAnswerMode: Int
+        get() = prefs.getInt(AUTO_ANSWER_MODE, AUTO_ANSWER_NONE)
+        set(autoAnswerMode) = prefs.edit().putInt(AUTO_ANSWER_MODE, autoAnswerMode).apply()
 }

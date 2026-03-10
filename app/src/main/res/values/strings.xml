@@ -81,6 +81,29 @@
     <string name="export_call_history">Export call history</string>
     <string name="import_call_history">Import call history</string>
 
+    <!-- Call Recording -->
+    <string name="call_recording">Call Recording</string>
+    <string name="enable_call_recording">Record all calls</string>
+    <string name="call_recording_started">Recording started</string>
+    <string name="call_recording_stopped">Recording saved</string>
+    <string name="call_recording_failed">Recording failed</string>
+
+    <!-- Auto Answer -->
+    <string name="auto_answer">Auto Answer</string>
+    <string name="auto_answer_mode">Auto-answer incoming calls</string>
+    <string name="auto_answer_none">Disabled</string>
+    <string name="auto_answer_all">All calls</string>
+    <string name="auto_answer_unknown">Unknown callers only</string>
+    <string name="auto_answer_active">Auto-answering call…</string>
+
+    <!-- Call Summary -->
+    <string name="call_summary_title">Call ended: %s</string>
+    <string name="call_summary_duration">Duration: %s</string>
+    <string name="call_summary_number">Number: %s</string>
+    <string name="call_summary_recorded">Recorded: %s</string>
+    <string name="call_summary_channel_name">Call Summaries</string>
+    <string name="call_summary_channel_description">Notifications with call summary after each call</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>
     <string name="faq_1_text">Such issues can have many device and system specific reasons, hard to say in general. You should look around in your device settings and make sure that the app is allowed to pop up when in background and allow displaying over other apps.</string>

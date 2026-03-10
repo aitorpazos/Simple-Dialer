@@ -19,7 +19,7 @@ import com.simplemobiletools.dialer.databinding.ActivitySettingsBinding
 import com.simplemobiletools.dialer.dialogs.ExportCallHistoryDialog
 import com.simplemobiletools.dialer.dialogs.ManageVisibleTabsDialog
 import com.simplemobiletools.dialer.extensions.config
-import com.simplemobiletools.dialer.helpers.RecentsHelper
+import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.models.RecentCall
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
@@ -86,6 +86,8 @@ class SettingsActivity : SimpleActivity() {
         setupAlwaysShowFullscreen()
         setupCallsExport()
         setupCallsImport()
+        setupCallRecording()
+        setupAutoAnswer()
         updateTextColors(binding.settingsHolder)
 
         binding.apply {
@@ -94,6 +96,7 @@ class SettingsActivity : SimpleActivity() {
                 settingsGeneralSettingsLabel,
                 settingsStartupLabel,
                 settingsCallsLabel,
+                settingsCallRecordingSectionLabel,
                 settingsMigrationSectionLabel
             ).forEach {
                 it.setTextColor(getProperPrimaryColor())
@@ -336,6 +339,40 @@ class SettingsActivity : SimpleActivity() {
             getContent.launch(CALL_HISTORY_FILE_TYPE)
         }
     }
+
+    private fun setupCallRecording() {
+        binding.apply {
+            settingsCallRecording.isChecked = config.callRecordingEnabled
+            settingsCallRecordingHolder.setOnClickListener {
+                settingsCallRecording.toggle()
+                config.callRecordingEnabled = settingsCallRecording.isChecked
+            }
+        }
+    }
+
+    private fun setupAutoAnswer() {
+        binding.settingsAutoAnswer.text = getAutoAnswerText()
+        binding.settingsAutoAnswerHolder.setOnClickListener {
+            val items = arrayListOf(
+                RadioItem(AUTO_ANSWER_NONE, getString(R.string.auto_answer_none)),
+                RadioItem(AUTO_ANSWER_ALL, getString(R.string.auto_answer_all)),
+                RadioItem(AUTO_ANSWER_UNKNOWN, getString(R.string.auto_answer_unknown))
+            )
+
+            RadioGroupDialog(this@SettingsActivity, items, config.autoAnswerMode) {
+                config.autoAnswerMode = it as Int
+                binding.settingsAutoAnswer.text = getAutoAnswerText()
+            }
+        }
+    }
+
+    private fun getAutoAnswerText() = getString(
+        when (config.autoAnswerMode) {
+            AUTO_ANSWER_ALL -> R.string.auto_answer_all
+            AUTO_ANSWER_UNKNOWN -> R.string.auto_answer_unknown
+            else -> R.string.auto_answer_none
+        }
+    )
 
     private fun importCallHistory(uri: Uri) {
         try {

@@ -92,7 +92,10 @@ android {
 }
 
 dependencies {
-    implementation(libs.simple.tools.commons)
+    implementation(libs.simple.tools.commons) {
+        exclude(group = "com.github.duolingo", module = "rtl-viewpager")
+    }
+    implementation(project(":rtlviewpager"))
     implementation(libs.indicator.fast.scroll)
     implementation(libs.autofit.text.view)
     implementation(libs.kotlinx.serialization.json)
