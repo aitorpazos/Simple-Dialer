@@ -1,11 +1,13 @@
 package com.simplemobiletools.dialer.activities
 
 import android.annotation.TargetApi
+import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.Menu
+import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts
 import com.simplemobiletools.commons.activities.ManageBlockedNumbersActivity
 import com.simplemobiletools.commons.dialogs.ChangeDateTimeFormatDialog
@@ -33,6 +35,7 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private val binding by viewBinding(ActivitySettingsBinding::inflate)
+    private val greetingManager by lazy { GreetingManager(this) }
     private val getContent = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             toast(R.string.importing)
@@ -58,6 +61,11 @@ class SettingsActivity : SimpleActivity() {
             updateMaterialActivityViews(settingsCoordinator, settingsHolder, useTransparentNavigation = true, useTopSearchMenu = false)
             setupMaterialScrollListener(settingsNestedScrollview, settingsToolbar)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        greetingManager.shutdown()
     }
 
     override fun onResume() {
@@ -87,7 +95,10 @@ class SettingsActivity : SimpleActivity() {
         setupCallsExport()
         setupCallsImport()
         setupCallRecording()
+        setupCallRecordingPath()
         setupAutoAnswer()
+        setupAutoAnswerGreeting()
+        setupPreviewGreeting()
         updateTextColors(binding.settingsHolder)
 
         binding.apply {
@@ -362,7 +373,90 @@ class SettingsActivity : SimpleActivity() {
             RadioGroupDialog(this@SettingsActivity, items, config.autoAnswerMode) {
                 config.autoAnswerMode = it as Int
                 binding.settingsAutoAnswer.text = getAutoAnswerText()
+                updateAutoAnswerSettingsVisibility()
             }
+        }
+        updateAutoAnswerSettingsVisibility()
+    }
+
+    private fun updateAutoAnswerSettingsVisibility() {
+        val enabled = config.autoAnswerMode != AUTO_ANSWER_NONE
+        binding.settingsAutoAnswerGreetingHolder.beVisibleIf(enabled)
+        binding.settingsPreviewGreetingHolder.beVisibleIf(enabled)
+    }
+
+    private fun setupAutoAnswerGreeting() {
+        binding.settingsAutoAnswerGreeting.text = config.autoAnswerGreeting.ifEmpty { getString(R.string.auto_answer_none) }
+        binding.settingsAutoAnswerGreetingHolder.setOnClickListener {
+            val editText = EditText(this).apply {
+                setText(config.autoAnswerGreeting)
+                hint = getString(R.string.auto_answer_greeting_hint)
+                setPadding(40, 30, 40, 30)
+                minLines = 3
+            }
+
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.auto_answer_greeting))
+                .setView(editText)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    config.autoAnswerGreeting = editText.text.toString().trim()
+                    binding.settingsAutoAnswerGreeting.text = config.autoAnswerGreeting.ifEmpty { getString(R.string.auto_answer_none) }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
+    }
+
+    private fun setupPreviewGreeting() {
+        binding.settingsPreviewGreetingHolder.setOnClickListener {
+            val greeting = config.autoAnswerGreeting
+            if (greeting.isEmpty()) {
+                toast(R.string.greeting_empty)
+                return@setOnClickListener
+            }
+
+            toast(R.string.preview_greeting_playing)
+            greetingManager.playGreetingPreview {
+                runOnUiThread {
+                    // Preview finished
+                }
+            }
+        }
+    }
+
+    private fun setupCallRecordingPath() {
+        val currentPath = config.callRecordingPath
+        binding.settingsCallRecordingPath.text = if (currentPath.isEmpty()) {
+            getString(R.string.call_recording_path_default)
+        } else {
+            currentPath
+        }
+
+        binding.settingsCallRecordingPathHolder.setOnClickListener {
+            val editText = EditText(this).apply {
+                setText(config.callRecordingPath)
+                hint = "/storage/emulated/0/CallRecordings"
+                setPadding(40, 30, 40, 30)
+                isSingleLine = true
+            }
+
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.call_recording_path))
+                .setView(editText)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    config.callRecordingPath = editText.text.toString().trim()
+                    binding.settingsCallRecordingPath.text = if (config.callRecordingPath.isEmpty()) {
+                        getString(R.string.call_recording_path_default)
+                    } else {
+                        config.callRecordingPath
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .setNeutralButton(R.string.call_recording_path_default) { _, _ ->
+                    config.callRecordingPath = ""
+                    binding.settingsCallRecordingPath.text = getString(R.string.call_recording_path_default)
+                }
+                .show()
         }
     }
 

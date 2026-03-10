@@ -421,6 +421,29 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:id="@+id/settings_call_recording_path_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_call_recording_path_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/call_recording_path" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_call_recording_path"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_call_recording_path_label"
+                    tools:text="CallRecordings" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_auto_answer_holder"
                 style="@style/SettingsHolderTextViewStyle"
                 android:layout_width="match_parent"
@@ -440,6 +463,46 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/settings_auto_answer_label"
                     tools:text="@string/auto_answer_none" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/settings_auto_answer_greeting_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_auto_answer_greeting_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/auto_answer_greeting" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_auto_answer_greeting"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_auto_answer_greeting_label"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    tools:text="Hello, this call is being answered automatically..." />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/settings_preview_greeting_holder"
+                style="@style/SettingsHolderTextViewOneLinerStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_preview_greeting"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/preview_greeting" />
 
             </RelativeLayout>
 

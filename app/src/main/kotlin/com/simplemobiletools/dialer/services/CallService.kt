@@ -21,6 +21,7 @@ class CallService : InCallService() {
     private val callNotificationManager by lazy { CallNotificationManager(this) }
     private val callRecordingManager by lazy { CallRecordingManager(this) }
     private val callSummaryManager by lazy { CallSummaryManager(this) }
+    private val greetingManager by lazy { GreetingManager(this) }
     private val handler = Handler(Looper.getMainLooper())
 
     // Track per-call state
@@ -28,6 +29,7 @@ class CallService : InCallService() {
     private var currentCallName = ""
     private var currentRecordingFile: File? = null
     private var callStartTimeMs = 0L
+    private var wasAutoAnswered = false
 
     private val callListener = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
@@ -53,6 +55,7 @@ class CallService : InCallService() {
         extractCallInfo(call)
 
         // Check auto-answer for incoming calls
+        wasAutoAnswered = false
         if (!call.isOutgoing()) {
             handleAutoAnswer(call)
         }
@@ -96,6 +99,7 @@ class CallService : InCallService() {
     override fun onDestroy() {
         super.onDestroy()
         callNotificationManager.cancelNotification()
+        greetingManager.shutdown()
     }
 
     private fun extractCallInfo(call: Call) {
@@ -125,6 +129,7 @@ class CallService : InCallService() {
                 // Auto-answer after a short delay to let the UI show
                 handler.postDelayed({
                     if (call.getStateCompat() == Call.STATE_RINGING) {
+                        wasAutoAnswered = true
                         call.answer(VideoProfile.STATE_AUDIO_ONLY)
                     }
                 }, 1000)
@@ -136,6 +141,7 @@ class CallService : InCallService() {
                     if (isUnknown) {
                         handler.postDelayed({
                             if (call.getStateCompat() == Call.STATE_RINGING) {
+                                wasAutoAnswered = true
                                 call.answer(VideoProfile.STATE_AUDIO_ONLY)
                             }
                         }, 1000)
@@ -148,6 +154,17 @@ class CallService : InCallService() {
     private fun onCallActive(call: Call) {
         callStartTimeMs = System.currentTimeMillis()
 
+        // Play greeting if this was an auto-answered call
+        if (wasAutoAnswered) {
+            val greeting = config.autoAnswerGreeting
+            if (greeting.isNotEmpty()) {
+                // Small delay to let audio route stabilise after answer
+                handler.postDelayed({
+                    greetingManager.playGreetingForCall()
+                }, 500)
+            }
+        }
+
         // Start recording if enabled
         if (config.callRecordingEnabled) {
             val number = currentCallNumber.ifEmpty { "unknown" }
@@ -159,6 +176,9 @@ class CallService : InCallService() {
     }
 
     private fun onCallEnding(call: Call) {
+        // Stop greeting if still playing
+        greetingManager.stopGreeting()
+
         // Stop recording
         val recordingFile = if (callRecordingManager.isCurrentlyRecording()) {
             callRecordingManager.stopRecording()
@@ -190,5 +210,6 @@ class CallService : InCallService() {
         currentCallNumber = ""
         currentCallName = ""
         currentRecordingFile = null
+        wasAutoAnswered = false
     }
 }
