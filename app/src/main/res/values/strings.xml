@@ -155,7 +155,6 @@
     <string name="simulated_call_ended">Call ended</string>
     <string name="simulated_call_auto_answering">Auto-answering in %ds…</string>
     <string name="answer">Answer</string>
-    <string name="decline">Decline</string>
 
     <!--
         Haven't found some strings? There's more at
