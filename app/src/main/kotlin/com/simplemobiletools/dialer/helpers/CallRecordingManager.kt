@@ -97,10 +97,12 @@ class CallRecordingManager(private val context: Context) {
         }
     }
 
-    fun stopRecording(): String? {
+    fun stopRecording(): RecordingResult? {
         if (!isRecording) return null
 
         val name = currentRecordingName
+        val uri = currentRecordingUri
+        val file = currentRecordingFile
         try {
             mediaRecorder?.apply {
                 stop()
@@ -116,8 +118,14 @@ class CallRecordingManager(private val context: Context) {
 
         cleanup()
 
-        // Return the filename for display in call summary
-        return name
+        if (name == null) return null
+
+        // Build the URI: SAF uri if available, otherwise file URI
+        val resultUri = uri ?: if (file != null) {
+            Uri.fromFile(file)
+        } else null
+
+        return RecordingResult(name, resultUri, file)
     }
 
     private fun cleanup() {
@@ -130,3 +138,9 @@ class CallRecordingManager(private val context: Context) {
 
     fun getCurrentRecordingName() = currentRecordingName
 }
+
+data class RecordingResult(
+    val name: String,
+    val uri: Uri?,
+    val file: File?
+)

@@ -112,9 +112,50 @@
     <string name="call_summary_channel_name">Call Summaries</string>
     <string name="call_summary_channel_description">Notifications with call summary after each call</string>
 
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Call end notification actions</string>
+    <string name="notif_action_play_recording">Play recording</string>
+    <string name="notif_action_share">Share…</string>
+    <string name="notif_action_share_recording">Share recording</string>
+    <string name="notif_action_share_transcription">Share transcription</string>
+    <string name="notif_action_show_transcription">Show transcription</string>
+    <string name="share_recording">Share recording</string>
+    <string name="recording_not_found">Recording not found</string>
+    <string name="no_app_to_play_recording">No app found to play recording</string>
+    <string name="share_failed">Could not share</string>
+    <string name="transcription_not_available">Transcription not available yet</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>
     <string name="faq_1_text">Such issues can have many device and system specific reasons, hard to say in general. You should look around in your device settings and make sure that the app is allowed to pop up when in background and allow displaying over other apps.</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Listen In</string>
+    <string name="listen_in_mode">Listen in on auto-answered calls</string>
+    <string name="listen_in_off">Off</string>
+    <string name="listen_in_notification">Notification button</string>
+    <string name="listen_in_auto">Auto (speaker on)</string>
+    <string name="stop_listening">Stop Listening</string>
+    <string name="hang_up">Hang Up</string>
+    <string name="active_call_channel_name">Active call</string>
+    <string name="active_call_channel_description">Controls for active auto-answered calls</string>
+    <string name="active_call_notification_title">Auto-answered: %s</string>
+    <string name="listening_in">Speaker on — listening to call</string>
+    <string name="tap_listen_in">Tap Listen In to hear the call</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Testing</string>
+    <string name="simulate_call">Simulate incoming call</string>
+    <string name="simulate_call_summary">Test the caller experience with a simulated call</string>
+    <string name="simulated_call_banner">⚡ SIMULATED CALL</string>
+    <string name="simulated_call_caller">Test Caller</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Ringing…</string>
+    <string name="simulated_call_active">Call active</string>
+    <string name="simulated_call_ended">Call ended</string>
+    <string name="simulated_call_auto_answering">Auto-answering in %ds…</string>
+    <string name="answer">Answer</string>
+    <string name="decline">Decline</string>
 
     <!--
         Haven't found some strings? There's more at

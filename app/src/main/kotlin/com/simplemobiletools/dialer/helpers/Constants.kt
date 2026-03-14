@@ -23,6 +23,11 @@ const val CALL_RECORDING_ENABLED = "call_recording_enabled"
 const val CALL_RECORDING_PATH = "call_recording_path"
 const val AUTO_ANSWER_MODE = "auto_answer_mode"
 const val AUTO_ANSWER_GREETING = "auto_answer_greeting"
+const val NOTIFICATION_ACTION_PLAY_RECORDING = "notification_action_play_recording"
+const val NOTIFICATION_ACTION_SHARE = "notification_action_share"
+const val NOTIFICATION_ACTION_SHARE_RECORDING = "notification_action_share_recording"
+const val NOTIFICATION_ACTION_SHARE_TRANSCRIPTION = "notification_action_share_transcription"
+const val NOTIFICATION_ACTION_SHOW_TRANSCRIPTION = "notification_action_show_transcription"
 
 // Auto-answer mode values
 const val AUTO_ANSWER_NONE = 0
@@ -43,3 +48,42 @@ const val DECLINE_CALL = PATH + "decline_call"
 const val DIALPAD_TONE_LENGTH_MS = 150L // The length of DTMF tones in milliseconds
 
 const val MIN_RECENTS_THRESHOLD = 30
+
+// Notification action intent actions
+private const val SUMMARY_ACTION_PATH = "com.simplemobiletools.dialer.action."
+const val ACTION_PLAY_RECORDING = SUMMARY_ACTION_PATH + "play_recording"
+const val ACTION_SHARE_RECORDING = SUMMARY_ACTION_PATH + "share_recording"
+const val ACTION_SHARE_TRANSCRIPTION = SUMMARY_ACTION_PATH + "share_transcription"
+const val ACTION_SHARE_CHOOSER = SUMMARY_ACTION_PATH + "share_chooser"
+const val ACTION_SHOW_TRANSCRIPTION = SUMMARY_ACTION_PATH + "show_transcription"
+
+// Extras for notification action intents
+const val EXTRA_RECORDING_URI = "extra_recording_uri"
+const val EXTRA_RECORDING_NAME = "extra_recording_name"
+const val EXTRA_CONTACT_NAME = "extra_contact_name"
+const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
+
+// Bitmask for enabled notification actions (default: play recording only)
+const val NOTIF_ACTION_PLAY_RECORDING = 1
+const val NOTIF_ACTION_SHARE = 2
+const val NOTIF_ACTION_SHARE_RECORDING = 4
+const val NOTIF_ACTION_SHARE_TRANSCRIPTION = 8
+const val NOTIF_ACTION_SHOW_TRANSCRIPTION = 16
+const val DEFAULT_NOTIFICATION_ACTIONS = NOTIF_ACTION_SHARE or NOTIF_ACTION_SHOW_TRANSCRIPTION
+
+// Listen-in mode values
+const val LISTEN_IN_OFF = 0
+const val LISTEN_IN_NOTIFICATION = 1
+const val LISTEN_IN_AUTO = 2
+
+// Listen-in preference key
+const val LISTEN_IN_MODE = "listen_in_mode"
+
+// Active call notification actions
+private const val ACTIVE_CALL_PATH = "com.simplemobiletools.dialer.action."
+const val ACTION_LISTEN_IN = ACTIVE_CALL_PATH + "listen_in"
+const val ACTION_STOP_LISTENING = ACTIVE_CALL_PATH + "stop_listening"
+const val ACTION_HANG_UP = ACTIVE_CALL_PATH + "hang_up"
+
+const val ACTIVE_CALL_NOTIFICATION_ID = 4001
+const val ACTIVE_CALL_CHANNEL_ID = "active_call_channel"

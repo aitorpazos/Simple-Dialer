@@ -31,6 +31,9 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
           restore-keys: gradle-
 
+      - name: Run unit tests
+        run: ./gradlew testCoreDebugUnitTest
+
       - name: Build release APK
         run: ./gradlew assembleCoreRelease
 
@@ -54,11 +57,15 @@ jobs:
             - 🤖 **Auto-Answer** — Automatically answer calls (all / unknown callers / disabled)
             - 💬 **Custom Greeting** — Configurable TTS greeting for auto-answered calls
             - 🔊 **Greeting Preview** — Listen to what callers will hear
-            - 📋 **Call Summary** — Notification summary after each call
+            - 📋 **Call Summary** — Notification summary after each call with configurable action buttons
+            - 🔈 **Listen-In** — Listen to auto-answered calls via speaker toggle notification
+            - 🧪 **Simulate Call** — Test the full caller experience from Settings
 
             ### Changes in this release
-            - 🔑 **Stable signing key** — Committed PKCS12 keystore ensures updates install over previous versions without uninstalling
-            - 📂 **Folder picker for recordings** — Replaced text field with Android's standard folder selection dialog (SAF)
+            - 🔔 **Configurable notification actions** — Choose which buttons appear on post-call notifications (Play, Share, Share Recording, Share Transcription, Show Transcription)
+            - 🔈 **Listen-in on auto-answered calls** — Speaker toggle notification when calls are auto-answered (off / notification button / auto speaker)
+            - 🧪 **Simulate incoming call** — Test the complete caller experience from Settings
+            - ✅ **Unit tests** — Auto-answer logic, notification action filtering, listen-in mode, constants integrity
 
             ### Install
             Download the **release APK** (signed, minified).
