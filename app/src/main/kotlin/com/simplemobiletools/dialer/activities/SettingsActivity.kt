@@ -109,9 +109,12 @@ class SettingsActivity : SimpleActivity() {
         setupCallsImport()
         setupCallRecording()
         setupCallRecordingPath()
+        setupNotificationActions()
         setupAutoAnswer()
         setupAutoAnswerGreeting()
         setupPreviewGreeting()
+        setupListenIn()
+        setupSimulateCall()
         updateTextColors(binding.settingsHolder)
 
         binding.apply {
@@ -121,6 +124,7 @@ class SettingsActivity : SimpleActivity() {
                 settingsStartupLabel,
                 settingsCallsLabel,
                 settingsCallRecordingSectionLabel,
+                settingsTestingSectionLabel,
                 settingsMigrationSectionLabel
             ).forEach {
                 it.setTextColor(getProperPrimaryColor())
@@ -396,6 +400,7 @@ class SettingsActivity : SimpleActivity() {
         val enabled = config.autoAnswerMode != AUTO_ANSWER_NONE
         binding.settingsAutoAnswerGreetingHolder.beVisibleIf(enabled)
         binding.settingsPreviewGreetingHolder.beVisibleIf(enabled)
+        binding.settingsListenInHolder.beVisibleIf(enabled)
     }
 
     private fun setupAutoAnswerGreeting() {
@@ -437,6 +442,39 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
+    private fun setupListenIn() {
+        updateListenInLabel()
+        binding.settingsListenInHolder.setOnClickListener {
+            val items = arrayListOf(
+                RadioItem(LISTEN_IN_OFF, getString(R.string.listen_in_off)),
+                RadioItem(LISTEN_IN_NOTIFICATION, getString(R.string.listen_in_notification)),
+                RadioItem(LISTEN_IN_AUTO, getString(R.string.listen_in_auto))
+            )
+
+            RadioGroupDialog(this@SettingsActivity, items, config.listenInMode) {
+                config.listenInMode = it as Int
+                updateListenInLabel()
+            }
+        }
+    }
+
+    private fun updateListenInLabel() {
+        binding.settingsListenIn.text = getString(
+            when (config.listenInMode) {
+                LISTEN_IN_AUTO -> R.string.listen_in_auto
+                LISTEN_IN_NOTIFICATION -> R.string.listen_in_notification
+                else -> R.string.listen_in_off
+            }
+        )
+    }
+
+    private fun setupSimulateCall() {
+        binding.settingsSimulateCallHolder.setOnClickListener {
+            val intent = Intent(this, SimulatedCallActivity::class.java)
+            startActivity(intent)
+        }
+    }
+
     private fun setupCallRecordingPath() {
         updateRecordingPathLabel()
 
@@ -473,6 +511,65 @@ class SettingsActivity : SimpleActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun setupNotificationActions() {
+        updateNotificationActionsLabel()
+
+        binding.settingsNotificationActionsHolder.setOnClickListener {
+            showNotificationActionsDialog()
+        }
+    }
+
+    private fun showNotificationActionsDialog() {
+        val current = config.callEndNotificationActions
+        val labels = arrayOf(
+            getString(R.string.notif_action_play_recording),
+            getString(R.string.notif_action_share),
+            getString(R.string.notif_action_share_recording),
+            getString(R.string.notif_action_share_transcription),
+            getString(R.string.notif_action_show_transcription)
+        )
+        val flags = intArrayOf(
+            NOTIF_ACTION_PLAY_RECORDING,
+            NOTIF_ACTION_SHARE,
+            NOTIF_ACTION_SHARE_RECORDING,
+            NOTIF_ACTION_SHARE_TRANSCRIPTION,
+            NOTIF_ACTION_SHOW_TRANSCRIPTION
+        )
+        val checked = BooleanArray(flags.size) { current and flags[it] != 0 }
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.notification_actions_label))
+            .setMultiChoiceItems(labels, checked) { _, which, isChecked ->
+                checked[which] = isChecked
+            }
+            .setPositiveButton(R.string.ok) { _, _ ->
+                var result = 0
+                for (i in flags.indices) {
+                    if (checked[i]) result = result or flags[i]
+                }
+                config.callEndNotificationActions = result
+                updateNotificationActionsLabel()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun updateNotificationActionsLabel() {
+        val current = config.callEndNotificationActions
+        val names = mutableListOf<String>()
+        if (current and NOTIF_ACTION_PLAY_RECORDING != 0) names.add(getString(R.string.notif_action_play_recording))
+        if (current and NOTIF_ACTION_SHARE != 0) names.add(getString(R.string.notif_action_share))
+        if (current and NOTIF_ACTION_SHARE_RECORDING != 0) names.add(getString(R.string.notif_action_share_recording))
+        if (current and NOTIF_ACTION_SHARE_TRANSCRIPTION != 0) names.add(getString(R.string.notif_action_share_transcription))
+        if (current and NOTIF_ACTION_SHOW_TRANSCRIPTION != 0) names.add(getString(R.string.notif_action_show_transcription))
+
+        binding.settingsNotificationActions.text = if (names.isEmpty()) {
+            getString(R.string.auto_answer_none)
+        } else {
+            names.joinToString(", ")
         }
     }
 

@@ -30,6 +30,9 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '**/libs.versions.toml') }}
           restore-keys: gradle-
 
+      - name: Run unit tests
+        run: ./gradlew testCoreDebugUnitTest
+
       - name: Build debug APK
         run: ./gradlew assembleCoreDebug
 

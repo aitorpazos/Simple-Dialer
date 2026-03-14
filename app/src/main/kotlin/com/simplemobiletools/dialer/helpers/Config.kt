@@ -105,4 +105,12 @@ class Config(context: Context) : BaseConfig(context) {
     var autoAnswerGreeting: String
         get() = prefs.getString(AUTO_ANSWER_GREETING, DEFAULT_AUTO_ANSWER_GREETING) ?: DEFAULT_AUTO_ANSWER_GREETING
         set(autoAnswerGreeting) = prefs.edit().putString(AUTO_ANSWER_GREETING, autoAnswerGreeting).apply()
+
+    var callEndNotificationActions: Int
+        get() = prefs.getInt("call_end_notification_actions", DEFAULT_NOTIFICATION_ACTIONS)
+        set(value) = prefs.edit().putInt("call_end_notification_actions", value).apply()
+
+    var listenInMode: Int
+        get() = prefs.getInt(LISTEN_IN_MODE, LISTEN_IN_NOTIFICATION)
+        set(value) = prefs.edit().putInt(LISTEN_IN_MODE, value).apply()
 }

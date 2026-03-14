@@ -1,13 +1,20 @@
 package com.simplemobiletools.dialer.services
 
 import android.app.KeyguardManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.InCallService
 import android.telecom.VideoProfile
+import androidx.core.app.NotificationCompat
+import com.simplemobiletools.dialer.R
 import com.simplemobiletools.dialer.activities.CallActivity
 import com.simplemobiletools.dialer.extensions.config
 import com.simplemobiletools.dialer.extensions.getCallDuration
@@ -15,6 +22,7 @@ import com.simplemobiletools.dialer.extensions.getStateCompat
 import com.simplemobiletools.dialer.extensions.isOutgoing
 import com.simplemobiletools.dialer.extensions.powerManager
 import com.simplemobiletools.dialer.helpers.*
+import com.simplemobiletools.dialer.receivers.ActiveCallActionReceiver
 
 class CallService : InCallService() {
     private val callNotificationManager by lazy { CallNotificationManager(this) }
@@ -26,9 +34,10 @@ class CallService : InCallService() {
     // Track per-call state
     private var currentCallNumber = ""
     private var currentCallName = ""
-    private var currentRecordingName: String? = null
+    private var currentRecordingResult: RecordingResult? = null
     private var callStartTimeMs = 0L
     private var wasAutoAnswered = false
+    private var isListeningIn = false
 
     private val callListener = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
@@ -80,6 +89,7 @@ class CallService : InCallService() {
         if (CallManager.getPhoneState() == NoCall) {
             CallManager.inCallService = null
             callNotificationManager.cancelNotification()
+            dismissActiveCallNotification()
         } else {
             callNotificationManager.setupNotification()
             if (wasPrimaryCall) {
@@ -92,12 +102,21 @@ class CallService : InCallService() {
         super.onCallAudioStateChanged(audioState)
         if (audioState != null) {
             CallManager.onAudioStateChanged(audioState)
+            // Update listen-in notification when speaker state changes
+            if (wasAutoAnswered && config.listenInMode != LISTEN_IN_OFF) {
+                val isSpeaker = audioState.route == CallAudioState.ROUTE_SPEAKER
+                if (isSpeaker != isListeningIn) {
+                    isListeningIn = isSpeaker
+                    showActiveCallNotification(isListeningIn)
+                }
+            }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         callNotificationManager.cancelNotification()
+        dismissActiveCallNotification()
         greetingManager.shutdown()
     }
 
@@ -162,6 +181,22 @@ class CallService : InCallService() {
                     greetingManager.playGreetingForCall()
                 }, 500)
             }
+
+            // Handle listen-in
+            val listenInMode = config.listenInMode
+            when (listenInMode) {
+                LISTEN_IN_AUTO -> {
+                    handler.postDelayed({
+                        CallManager.setAudioRoute(CallAudioState.ROUTE_SPEAKER)
+                        isListeningIn = true
+                        showActiveCallNotification(true)
+                    }, 600)
+                }
+                LISTEN_IN_NOTIFICATION -> {
+                    isListeningIn = false
+                    showActiveCallNotification(false)
+                }
+            }
         }
 
         // Start recording if enabled
@@ -169,7 +204,7 @@ class CallService : InCallService() {
             val number = currentCallNumber.ifEmpty { "unknown" }
             val success = callRecordingManager.startRecording(number)
             if (!success) {
-                currentRecordingName = null
+                currentRecordingResult = null
             }
         }
     }
@@ -178,13 +213,16 @@ class CallService : InCallService() {
         // Stop greeting if still playing
         greetingManager.stopGreeting()
 
+        // Dismiss listen-in notification
+        dismissActiveCallNotification()
+
         // Stop recording
-        val recordingName = if (callRecordingManager.isCurrentlyRecording()) {
+        val recordingResult = if (callRecordingManager.isCurrentlyRecording()) {
             callRecordingManager.stopRecording()
         } else {
             null
         }
-        currentRecordingName = recordingName
+        currentRecordingResult = recordingResult
 
         // Calculate duration
         val durationSeconds = if (callStartTimeMs > 0) {
@@ -200,7 +238,7 @@ class CallService : InCallService() {
                 contactName = name,
                 phoneNumber = currentCallNumber,
                 durationSeconds = durationSeconds,
-                recordingName = recordingName
+                recordingResult = recordingResult
             )
         }
 
@@ -208,7 +246,79 @@ class CallService : InCallService() {
         callStartTimeMs = 0L
         currentCallNumber = ""
         currentCallName = ""
-        currentRecordingName = null
+        currentRecordingResult = null
         wasAutoAnswered = false
+        isListeningIn = false
+    }
+
+    // ---- Listen-in notification ----
+
+    private fun createActiveCallChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = getString(R.string.active_call_channel_name)
+            val channel = NotificationChannel(
+                ACTIVE_CALL_CHANNEL_ID, name, NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = getString(R.string.active_call_channel_description)
+                setShowBadge(false)
+            }
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showActiveCallNotification(isSpeakerOn: Boolean) {
+        createActiveCallChannel()
+
+        val callerLabel = currentCallName.ifEmpty { currentCallNumber.ifEmpty { getString(R.string.unknown_caller) } }
+        val title = getString(R.string.active_call_notification_title, callerLabel)
+        val text = if (isSpeakerOn) getString(R.string.listening_in) else getString(R.string.tap_listen_in)
+
+        val builder = NotificationCompat.Builder(this, ACTIVE_CALL_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_phone_vector)
+            .setContentTitle(title)
+            .setContentText(text)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+
+        // Toggle listen action
+        if (isSpeakerOn) {
+            val stopIntent = Intent(this, ActiveCallActionReceiver::class.java).apply {
+                action = ACTION_STOP_LISTENING
+            }
+            val stopPi = PendingIntent.getBroadcast(
+                this, 1, stopIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(R.drawable.ic_phone_vector, getString(R.string.stop_listening), stopPi)
+        } else {
+            val listenIntent = Intent(this, ActiveCallActionReceiver::class.java).apply {
+                action = ACTION_LISTEN_IN
+            }
+            val listenPi = PendingIntent.getBroadcast(
+                this, 2, listenIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(R.drawable.ic_phone_vector, getString(R.string.listen_in), listenPi)
+        }
+
+        // Hang up action
+        val hangUpIntent = Intent(this, ActiveCallActionReceiver::class.java).apply {
+            action = ACTION_HANG_UP
+        }
+        val hangUpPi = PendingIntent.getBroadcast(
+            this, 3, hangUpIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        builder.addAction(R.drawable.ic_phone_vector, getString(R.string.hang_up), hangUpPi)
+
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify(ACTIVE_CALL_NOTIFICATION_ID, builder.build())
+    }
+
+    private fun dismissActiveCallNotification() {
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        nm.cancel(ACTIVE_CALL_NOTIFICATION_ID)
     }
 }

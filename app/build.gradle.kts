@@ -89,4 +89,6 @@ dependencies {
     implementation(libs.autofit.text.view)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.documentfile)
+
+    testImplementation("junit:junit:4.13.2")
 }

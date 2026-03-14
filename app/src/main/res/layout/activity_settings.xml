@@ -444,6 +444,29 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:id="@+id/settings_notification_actions_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_notification_actions_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/notification_actions_label" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_notification_actions"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_notification_actions_label"
+                    tools:text="Play recording" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_auto_answer_holder"
                 style="@style/SettingsHolderTextViewStyle"
                 android:layout_width="match_parent"
@@ -506,8 +529,58 @@
 
             </RelativeLayout>
 
+            <RelativeLayout
+                android:id="@+id/settings_listen_in_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_listen_in_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/listen_in_mode" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_listen_in"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_listen_in_label"
+                    tools:text="@string/listen_in_notification" />
+
+            </RelativeLayout>
+
             <include
                 android:id="@+id/settings_call_recording_divider"
+                layout="@layout/divider" />
+
+            <!-- Testing section -->
+            <TextView
+                android:id="@+id/settings_testing_section_label"
+                style="@style/SettingsSectionLabelStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/testing" />
+
+            <RelativeLayout
+                android:id="@+id/settings_simulate_call_holder"
+                style="@style/SettingsHolderTextViewOneLinerStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_simulate_call"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/simulate_call" />
+
+            </RelativeLayout>
+
+            <include
+                android:id="@+id/settings_testing_divider"
                 layout="@layout/divider" />
 
             <TextView

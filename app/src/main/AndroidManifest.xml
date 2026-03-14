@@ -123,6 +123,14 @@
             android:showOnLockScreen="true" />
 
         <activity
+            android:name=".activities.SimulatedCallActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:label="@string/simulate_call"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme" />
+
+        <activity
             android:name=".activities.DialpadActivity"
             android:exported="true"
             android:label="@string/dialpad"
@@ -201,6 +209,40 @@
                 <action android:name="com.simplemobiletools.dialer.action.DECLINE_CALL" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".receivers.CallSummaryActionReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.simplemobiletools.dialer.action.play_recording" />
+                <action android:name="com.simplemobiletools.dialer.action.share_recording" />
+                <action android:name="com.simplemobiletools.dialer.action.share_transcription" />
+                <action android:name="com.simplemobiletools.dialer.action.share_chooser" />
+                <action android:name="com.simplemobiletools.dialer.action.show_transcription" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".receivers.ActiveCallActionReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.simplemobiletools.dialer.action.listen_in" />
+                <action android:name="com.simplemobiletools.dialer.action.stop_listening" />
+                <action android:name="com.simplemobiletools.dialer.action.hang_up" />
+            </intent-filter>
+        </receiver>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <activity-alias
             android:name=".activities.SplashActivity.Red"
