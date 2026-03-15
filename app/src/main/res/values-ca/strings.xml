@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Oculta els números del teclat numèric</string>
     <string name="export_call_history">Exporta l\'historial de trucades</string>
     <string name="import_call_history">Importa l\'historial de trucades</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Número: %s</string>
+    <string name="call_summary_recorded">Enregistrada: %s</string>
+    <string name="call_summary_channel_name">Resums de trucades</string>
+    <string name="call_summary_channel_description">Notificacions amb resum després de cada trucada</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Accions de notificació en finalitzar trucada</string>
+    <string name="notif_action_play_recording">Reproduir enregistrament</string>
+    <string name="notif_action_share">Compartir…</string>
+    <string name="notif_action_share_recording">Compartir enregistrament</string>
+    <string name="notif_action_share_transcription">Compartir transcripció</string>
+    <string name="notif_action_show_transcription">Mostrar transcripció</string>
+    <string name="share_recording">Compartir enregistrament</string>
+    <string name="recording_not_found">No s\'ha trobat l\'enregistrament</string>
+    <string name="no_app_to_play_recording">No s\'ha trobat cap aplicació per reproduir l\'enregistrament</string>
+    <string name="share_failed">No s\'ha pogut compartir</string>
+    <string name="transcription_not_available">La transcripció encara no està disponible</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Escoltar</string>
+    <string name="listen_in_mode">Escoltar trucades contestades automàticament</string>
+    <string name="listen_in_off">Desactivat</string>
+    <string name="listen_in_notification">Botó de notificació</string>
+    <string name="listen_in_auto">Automàtic (altaveu activat)</string>
+    <string name="stop_listening">Deixar d\'escoltar</string>
+    <string name="hang_up">Penjar</string>
+    <string name="active_call_channel_name">Trucada activa</string>
+    <string name="active_call_channel_description">Controls per a trucades contestades automàticament</string>
+    <string name="active_call_notification_title">Contestada automàticament: %s</string>
+    <string name="listening_in">Altaveu activat — escoltant la trucada</string>
+    <string name="tap_listen_in">Premeu Escoltar per sentir la trucada</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Proves</string>
+    <string name="simulate_call">Simular trucada entrant</string>
+    <string name="simulate_call_summary">Proveu l\'experiència del trucant amb una trucada simulada</string>
+    <string name="simulated_call_banner">⚡ TRUCADA SIMULADA</string>
+    <string name="simulated_call_caller">Trucant de prova</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Sonant…</string>
+    <string name="simulated_call_active">Trucada activa</string>
+    <string name="simulated_call_ended">Trucada finalitzada</string>
+    <string name="simulated_call_auto_answering">Contestació automàtica en %d s…</string>
+    <string name="answer">Contestar</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Sento trucades entrants, però la pantalla no s\'encén. Què puc fer\?</string>
     <string name="faq_1_text">Aquests problemes poden tenir moltes raons específiques del dispositiu i del sistema, difícils de dir en general. Hauríeu de mirar per la configuració del dispositiu i assegurar-vos que l\'aplicació pugui aparèixer en segon pla i permetre que es mostri sobre altres aplicacions.</string>

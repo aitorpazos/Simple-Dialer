@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Ocultar números no marcador</string>
     <string name="export_call_history">Exportar registo de chamadas</string>
     <string name="import_call_history">Importar registo de chamadas</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Número: %s</string>
+    <string name="call_summary_recorded">Gravada: %s</string>
+    <string name="call_summary_channel_name">Resumos de chamadas</string>
+    <string name="call_summary_channel_description">Notificações com resumo após cada chamada</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Ações de notificação ao fim da chamada</string>
+    <string name="notif_action_play_recording">Reproduzir gravação</string>
+    <string name="notif_action_share">Partilhar…</string>
+    <string name="notif_action_share_recording">Partilhar gravação</string>
+    <string name="notif_action_share_transcription">Partilhar transcrição</string>
+    <string name="notif_action_show_transcription">Mostrar transcrição</string>
+    <string name="share_recording">Partilhar gravação</string>
+    <string name="recording_not_found">Gravação não encontrada</string>
+    <string name="no_app_to_play_recording">Nenhuma app encontrada para reproduzir a gravação</string>
+    <string name="share_failed">Não foi possível partilhar</string>
+    <string name="transcription_not_available">A transcrição ainda não está disponível</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Ouvir</string>
+    <string name="listen_in_mode">Ouvir chamadas atendidas automaticamente</string>
+    <string name="listen_in_off">Desligado</string>
+    <string name="listen_in_notification">Botão de notificação</string>
+    <string name="listen_in_auto">Automático (altifalante ligado)</string>
+    <string name="stop_listening">Parar de ouvir</string>
+    <string name="hang_up">Desligar</string>
+    <string name="active_call_channel_name">Chamada ativa</string>
+    <string name="active_call_channel_description">Controlos para chamadas atendidas automaticamente</string>
+    <string name="active_call_notification_title">Atendida automaticamente: %s</string>
+    <string name="listening_in">Altifalante ligado — a ouvir a chamada</string>
+    <string name="tap_listen_in">Toque em Ouvir para escutar a chamada</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Testes</string>
+    <string name="simulate_call">Simular chamada recebida</string>
+    <string name="simulate_call_summary">Teste a experiência do chamador com uma chamada simulada</string>
+    <string name="simulated_call_banner">⚡ CHAMADA SIMULADA</string>
+    <string name="simulated_call_caller">Chamador de teste</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">A tocar…</string>
+    <string name="simulated_call_active">Chamada ativa</string>
+    <string name="simulated_call_ended">Chamada terminada</string>
+    <string name="simulated_call_auto_answering">Atendimento automático em %ds…</string>
+    <string name="answer">Atender</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Estou a ouvir som mas o ecrã não liga. O que posso fazer\?</string>
     <string name="faq_1_text">Esses problemas podem ter muitos motivos específicos do dispositivo e do sistema, difíceis de dizer em geral. Aceda às definições do sistema e certifique-se de que concedeu as permissões necessárias tais como permitir exibição por cima das outras aplicações.</string>

@@ -74,6 +74,49 @@
     <string name="hide_dialpad_numbers">مخفی کردن اعداد شماره‌گیر</string>
     <string name="export_call_history">خروجی گرفتن تاریخچهٔ تماس</string>
     <string name="import_call_history">وارد کردن تاریخچهٔ تماس</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">رقم: %s</string>
+    <string name="call_summary_recorded">ضبط شده: %s</string>
+    <string name="call_summary_channel_name">خلاصه تماس‌ها</string>
+    <string name="call_summary_channel_description">اعلان‌های خلاصه پس از هر تماس</string>
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">اقدامات اعلان پایان تماس</string>
+    <string name="notif_action_play_recording">پخش ضبط</string>
+    <string name="notif_action_share">اشتراک‌گذاری…</string>
+    <string name="notif_action_share_recording">اشتراک‌گذاری ضبط</string>
+    <string name="notif_action_share_transcription">اشتراک‌گذاری رونوشت</string>
+    <string name="notif_action_show_transcription">نمایش رونوشت</string>
+    <string name="share_recording">اشتراک‌گذاری ضبط</string>
+    <string name="recording_not_found">ضبط یافت نشد</string>
+    <string name="no_app_to_play_recording">برنامه‌ای برای پخش ضبط یافت نشد</string>
+    <string name="share_failed">اشتراک‌گذاری ممکن نشد</string>
+    <string name="transcription_not_available">رونوشت هنوز آماده نیست</string>
+    <!-- Listen In -->
+    <string name="listen_in">گوش دادن</string>
+    <string name="listen_in_mode">گوش دادن به تماس‌های پاسخ خودکار</string>
+    <string name="listen_in_off">خاموش</string>
+    <string name="listen_in_notification">دکمه اعلان</string>
+    <string name="listen_in_auto">خودکار (بلندگو روشن)</string>
+    <string name="stop_listening">توقف گوش دادن</string>
+    <string name="hang_up">قطع</string>
+    <string name="active_call_channel_name">تماس فعال</string>
+    <string name="active_call_channel_description">کنترل‌ها برای تماس‌های پاسخ خودکار</string>
+    <string name="active_call_notification_title">پاسخ خودکار: %s</string>
+    <string name="listening_in">بلندگو روشن — در حال گوش دادن به تماس</string>
+    <string name="tap_listen_in">برای شنیدن تماس روی گوش دادن بزنید</string>
+    <!-- Simulate Call -->
+    <string name="testing">آزمایش</string>
+    <string name="simulate_call">شبیه‌سازی تماس ورودی</string>
+    <string name="simulate_call_summary">تجربه تماس‌گیرنده را با تماس شبیه‌سازی شده آزمایش کنید</string>
+    <string name="simulated_call_banner">⚡ تماس شبیه‌سازی شده</string>
+    <string name="simulated_call_caller">تماس‌گیرنده آزمایشی</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">زنگ می‌زند…</string>
+    <string name="simulated_call_active">تماس فعال</string>
+    <string name="simulated_call_ended">تماس پایان یافت</string>
+    <string name="simulated_call_auto_answering">پاسخ خودکار در %d ثانیه…</string>
+    <string name="answer">پاسخ</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">من صدای تماس ورودی را می‌شنوم اما نمایشگر روشن نمی‌شود. باید چه کاری انجام دهم؟</string>
     <string name="faq_1_text">این مشکل ممکن است بسته به دلایل مشکلات مختلفی در دستگاه و سامانه رخ دهد، بنابراین جواب کلی برای آن سخت است. باید تنظیمات دستگاهتان را بررسی کنید و مطمئن شوید که برنامه اجازه دارد در پس‌زمینه اجرا شود و روی برنامه‌های دیگر نمایش داده شود.</string>

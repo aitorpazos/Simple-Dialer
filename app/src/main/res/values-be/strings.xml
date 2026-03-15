@@ -75,6 +75,95 @@
     <string name="export_call_history">Export call history</string>
     <string name="import_call_history">Import call history</string>
 
+    <!-- Call Summary -->
+    <string name="call_summary_number">Нумар: %s</string>
+    <string name="call_summary_recorded">Запісана: %s</string>
+    <string name="call_summary_channel_name">Зводкі выклікаў</string>
+    <string name="call_summary_channel_description">Апавяшчэнні са зводкай пасля кожнага выкліку</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Дзеянні апавяшчэння пасля выкліку</string>
+    <string name="notif_action_play_recording">Прайграць запіс</string>
+    <string name="notif_action_share">Падзяліцца…</string>
+    <string name="notif_action_share_recording">Падзяліцца запісам</string>
+    <string name="notif_action_share_transcription">Падзяліцца транскрыпцыяй</string>
+    <string name="notif_action_show_transcription">Паказаць транскрыпцыю</string>
+    <string name="share_recording">Падзяліцца запісам</string>
+    <string name="recording_not_found">Запіс не знойдзены</string>
+    <string name="no_app_to_play_recording">Не знойдзена праграма для прайгравання запісу</string>
+    <string name="share_failed">Не ўдалося падзяліцца</string>
+    <string name="transcription_not_available">Транскрыпцыя яшчэ недаступная</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Праслухаць</string>
+    <string name="listen_in_mode">Праслухоўванне аўтаматычна прынятых выклікаў</string>
+    <string name="listen_in_off">Выкл.</string>
+    <string name="listen_in_notification">Кнопка апавяшчэння</string>
+    <string name="listen_in_auto">Аўта (гучнамоўца ўкл.)</string>
+    <string name="stop_listening">Спыніць праслухоўванне</string>
+    <string name="hang_up">Скінуць</string>
+    <string name="active_call_channel_name">Актыўны выклік</string>
+    <string name="active_call_channel_description">Кіраванне аўтаматычна прынятымі выклікамі</string>
+    <string name="active_call_notification_title">Аўтаматычна прыняты: %s</string>
+    <string name="listening_in">Гучнамоўца ўкл. — праслухоўванне выкліку</string>
+    <string name="tap_listen_in">Націсніце Праслухаць, каб пачуць выклік</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Тэставанне</string>
+    <string name="simulate_call">Сімуляваць уваходны выклік</string>
+    <string name="simulate_call_summary">Праверце вопыт абанента з сімуляваным выклікам</string>
+    <string name="simulated_call_banner">⚡ СІМУЛЯВАНЫ ВЫКЛІК</string>
+    <string name="simulated_call_caller">Тэставы абанент</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Выклік…</string>
+    <string name="simulated_call_active">Выклік актыўны</string>
+    <string name="simulated_call_ended">Выклік скончаны</string>
+    <string name="simulated_call_auto_answering">Аўтаматычны адказ праз %d с…</string>
+    <string name="answer">Адказаць</string>
+
+    <!-- Call Recording -->
+    <string name="call_recording">Запіс выклікаў</string>
+    <string name="enable_call_recording">Запісваць усе выклікі</string>
+    <string name="call_recording_started">Запіс пачаўся</string>
+    <string name="call_recording_stopped">Запіс захаваны</string>
+    <string name="call_recording_failed">Запіс не ўдаўся</string>
+    <string name="call_recording_path">Шлях захоўвання запісаў</string>
+    <string name="call_recording_path_default">Стандартны (сховішча праграмы)</string>
+    <string name="call_recording_path_change">Выбраць іншую тэчку</string>
+
+    <!-- Auto Answer -->
+    <string name="auto_answer">Аўтаадказ</string>
+    <string name="auto_answer_mode">Аўтаматычна адказваць на ўваходныя выклікі</string>
+    <string name="auto_answer_none">Адключана</string>
+    <string name="auto_answer_all">Усе выклікі</string>
+    <string name="auto_answer_unknown">Толькі невядомыя абаненты</string>
+    <string name="auto_answer_active">Аўтаматычны адказ на выклік…</string>
+    <string name="auto_answer_greeting">Прывітанне аўтаадказу</string>
+    <string name="auto_answer_greeting_hint">Тэкст, які гучыць для абанента пры аўтаадказе</string>
+    <string name="preview_greeting">🔊 Праслухаць прывітанне</string>
+    <string name="preview_greeting_playing">Прайграванне прывітання…</string>
+    <string name="greeting_empty">Тэкст прывітання пусты</string>
+
+    <!-- Call Summary -->
+    <string name="call_summary_title">Выклік скончаны: %s</string>
+    <string name="call_summary_duration">Працягласць: %s</string>
+
+    <!-- TTS Settings -->
+    <string name="tts_engine">Рухавік TTS</string>
+    <string name="tts_engine_default">Сістэмны стандартны</string>
+    <string name="tts_language">Мова TTS</string>
+    <string name="tts_language_default">Стандартная прылады</string>
+
+    <!-- Per-SIM Settings -->
+    <string name="per_sim_settings">Налады аўтаадказу для кожнай SIM</string>
+    <string name="per_sim_settings_summary">Наладзіць мову і прывітанне для кожнай SIM-карты</string>
+    <string name="sim_greeting">Прывітанне для SIM %d</string>
+    <string name="sim_language">Мова для SIM %d</string>
+    <string name="sim_greeting_hint">Уласнае прывітанне для гэтай SIM (пакіньце пустым для глабальнага)</string>
+    <string name="sim_settings_title">SIM %d — %s</string>
+    <string name="sim_settings_configured">Наладжана</string>
+    <string name="sim_settings_default">Выкарыстоўвае глабальныя налады</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>
     <string name="faq_1_text">Such issues can have many device and system specific reasons, hard to say in general. You should look around in your device settings and make sure that the app is allowed to pop up when in background and allow displaying over other apps.</string>

@@ -75,6 +75,52 @@
     <string name="export_call_history">Export call history</string>
     <string name="import_call_history">Import call history</string>
 
+    <!-- Call Summary -->
+    <string name="call_summary_number">Número: %s</string>
+    <string name="call_summary_recorded">Gravada: %s</string>
+    <string name="call_summary_channel_name">Resumos de chamadas</string>
+    <string name="call_summary_channel_description">Notificações com resumo após cada chamada</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Ações de notificação ao final da chamada</string>
+    <string name="notif_action_play_recording">Reproduzir gravação</string>
+    <string name="notif_action_share">Compartilhar…</string>
+    <string name="notif_action_share_recording">Compartilhar gravação</string>
+    <string name="notif_action_share_transcription">Compartilhar transcrição</string>
+    <string name="notif_action_show_transcription">Mostrar transcrição</string>
+    <string name="share_recording">Compartilhar gravação</string>
+    <string name="recording_not_found">Gravação não encontrada</string>
+    <string name="no_app_to_play_recording">Nenhum app encontrado para reproduzir a gravação</string>
+    <string name="share_failed">Não foi possível compartilhar</string>
+    <string name="transcription_not_available">A transcrição ainda não está disponível</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Ouvir</string>
+    <string name="listen_in_mode">Ouvir chamadas atendidas automaticamente</string>
+    <string name="listen_in_off">Desligado</string>
+    <string name="listen_in_notification">Botão de notificação</string>
+    <string name="listen_in_auto">Automático (alto-falante ligado)</string>
+    <string name="stop_listening">Parar de ouvir</string>
+    <string name="hang_up">Desligar</string>
+    <string name="active_call_channel_name">Chamada ativa</string>
+    <string name="active_call_channel_description">Controles para chamadas atendidas automaticamente</string>
+    <string name="active_call_notification_title">Atendida automaticamente: %s</string>
+    <string name="listening_in">Alto-falante ligado — ouvindo a chamada</string>
+    <string name="tap_listen_in">Toque em Ouvir para escutar a chamada</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Testes</string>
+    <string name="simulate_call">Simular chamada recebida</string>
+    <string name="simulate_call_summary">Teste a experiência do chamador com uma chamada simulada</string>
+    <string name="simulated_call_banner">⚡ CHAMADA SIMULADA</string>
+    <string name="simulated_call_caller">Chamador de teste</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Tocando…</string>
+    <string name="simulated_call_active">Chamada ativa</string>
+    <string name="simulated_call_ended">Chamada encerrada</string>
+    <string name="simulated_call_auto_answering">Atendimento automático em %ds…</string>
+    <string name="answer">Atender</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Ouço chamadas recebidas, mas a tela não liga. O que eu posso fazer?</string>
     <string name="faq_1_text">Esses problemas podem ter muitos motivos específicos do dispositivo e do sistema, difíceis de dizer em geral. Você deve olhar em volta nas configurações do seu dispositivo e certificar-se de que o aplicativo pode aparecer quando estiver em segundo plano e permitir a exibição sobre outros aplicativos.</string>

@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Ukryj cyfry panelu wybierania</string>
     <string name="export_call_history">Eksportuj historię połączeń</string>
     <string name="import_call_history">Importuj historię połączeń</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Numer: %s</string>
+    <string name="call_summary_recorded">Nagrane: %s</string>
+    <string name="call_summary_channel_name">Podsumowania połączeń</string>
+    <string name="call_summary_channel_description">Powiadomienia z podsumowaniem po każdym połączeniu</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Akcje powiadomienia po zakończeniu połączenia</string>
+    <string name="notif_action_play_recording">Odtwórz nagranie</string>
+    <string name="notif_action_share">Udostępnij…</string>
+    <string name="notif_action_share_recording">Udostępnij nagranie</string>
+    <string name="notif_action_share_transcription">Udostępnij transkrypcję</string>
+    <string name="notif_action_show_transcription">Pokaż transkrypcję</string>
+    <string name="share_recording">Udostępnij nagranie</string>
+    <string name="recording_not_found">Nie znaleziono nagrania</string>
+    <string name="no_app_to_play_recording">Nie znaleziono aplikacji do odtworzenia nagrania</string>
+    <string name="share_failed">Nie udało się udostępnić</string>
+    <string name="transcription_not_available">Transkrypcja nie jest jeszcze dostępna</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Podsłuchaj</string>
+    <string name="listen_in_mode">Podsłuchiwanie automatycznie odebranych połączeń</string>
+    <string name="listen_in_off">Wyłączone</string>
+    <string name="listen_in_notification">Przycisk powiadomienia</string>
+    <string name="listen_in_auto">Automatycznie (głośnik włączony)</string>
+    <string name="stop_listening">Przestań słuchać</string>
+    <string name="hang_up">Rozłącz</string>
+    <string name="active_call_channel_name">Aktywne połączenie</string>
+    <string name="active_call_channel_description">Sterowanie automatycznie odebranymi połączeniami</string>
+    <string name="active_call_notification_title">Automatycznie odebrane: %s</string>
+    <string name="listening_in">Głośnik włączony — słuchanie połączenia</string>
+    <string name="tap_listen_in">Dotknij Podsłuchaj, aby usłyszeć połączenie</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Testowanie</string>
+    <string name="simulate_call">Symuluj połączenie przychodzące</string>
+    <string name="simulate_call_summary">Przetestuj doświadczenie dzwoniącego za pomocą symulowanego połączenia</string>
+    <string name="simulated_call_banner">⚡ SYMULOWANE POŁĄCZENIE</string>
+    <string name="simulated_call_caller">Dzwoniący testowy</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Dzwoni…</string>
+    <string name="simulated_call_active">Połączenie aktywne</string>
+    <string name="simulated_call_ended">Połączenie zakończone</string>
+    <string name="simulated_call_auto_answering">Automatyczne odebranie za %ds…</string>
+    <string name="answer">Odbierz</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Słyszę połączenia przychodzące, ale ekran się nie włącza. Co mogę zrobić\?</string>
     <string name="faq_1_text">Takie problemy mogą mieć wiele przyczyn specyficznych dla urządzenia i systemu; ogólnie trudno powiedzieć. Powinieneś/powinnaś rozejrzeć się w ustawieniach swojego urządzenia i upewnić się, że aplikacja może pojawiać się, gdy jest w tle, i wyświetlać się nad innymi aplikacjami.</string>

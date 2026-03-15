@@ -75,6 +75,52 @@
     <string name="export_call_history">Export call history</string>
     <string name="import_call_history">Import call history</string>
 
+    <!-- Call Summary -->
+    <string name="call_summary_number">番号: %s</string>
+    <string name="call_summary_recorded">録音済み: %s</string>
+    <string name="call_summary_channel_name">通話サマリー</string>
+    <string name="call_summary_channel_description">各通話後のサマリー通知</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">通話終了通知のアクション</string>
+    <string name="notif_action_play_recording">録音を再生</string>
+    <string name="notif_action_share">共有…</string>
+    <string name="notif_action_share_recording">録音を共有</string>
+    <string name="notif_action_share_transcription">文字起こしを共有</string>
+    <string name="notif_action_show_transcription">文字起こしを表示</string>
+    <string name="share_recording">録音を共有</string>
+    <string name="recording_not_found">録音が見つかりません</string>
+    <string name="no_app_to_play_recording">録音を再生するアプリが見つかりません</string>
+    <string name="share_failed">共有できませんでした</string>
+    <string name="transcription_not_available">文字起こしはまだ利用できません</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">聞く</string>
+    <string name="listen_in_mode">自動応答した通話を聞く</string>
+    <string name="listen_in_off">オフ</string>
+    <string name="listen_in_notification">通知ボタン</string>
+    <string name="listen_in_auto">自動（スピーカーオン）</string>
+    <string name="stop_listening">聞くのをやめる</string>
+    <string name="hang_up">切断</string>
+    <string name="active_call_channel_name">アクティブな通話</string>
+    <string name="active_call_channel_description">自動応答した通話のコントロール</string>
+    <string name="active_call_notification_title">自動応答: %s</string>
+    <string name="listening_in">スピーカーオン — 通話を聞いています</string>
+    <string name="tap_listen_in">聞くをタップして通話を聞く</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">テスト</string>
+    <string name="simulate_call">着信をシミュレート</string>
+    <string name="simulate_call_summary">シミュレートされた通話で発信者の体験をテスト</string>
+    <string name="simulated_call_banner">⚡ シミュレート通話</string>
+    <string name="simulated_call_caller">テスト発信者</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">着信中…</string>
+    <string name="simulated_call_active">通話中</string>
+    <string name="simulated_call_ended">通話終了</string>
+    <string name="simulated_call_auto_answering">%d秒後に自動応答…</string>
+    <string name="answer">応答</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">着信音は聞こえるのですが、画面がつきません。どうしたらよいですか？</string>
     <string name="faq_1_text">このような問題は、端末やシステム固有の理由が多く、一概には言えません。端末の設定を見て、アプリがバックグラウンドでポップアップすることを許可しているか、他のアプリの上に表示することを許可しているかを確認する必要があります。</string>

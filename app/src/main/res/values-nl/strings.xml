@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Toetsenblokcijfers verbergen</string>
     <string name="export_call_history">Gespreksgeschiedenis exporteren</string>
     <string name="import_call_history">Gespreksgeschiedenis importeren</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Nummer: %s</string>
+    <string name="call_summary_recorded">Opgenomen: %s</string>
+    <string name="call_summary_channel_name">Gesprekssamenvattingen</string>
+    <string name="call_summary_channel_description">Meldingen met samenvatting na elk gesprek</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Meldingsacties na gesprek</string>
+    <string name="notif_action_play_recording">Opname afspelen</string>
+    <string name="notif_action_share">Delen…</string>
+    <string name="notif_action_share_recording">Opname delen</string>
+    <string name="notif_action_share_transcription">Transcriptie delen</string>
+    <string name="notif_action_show_transcription">Transcriptie tonen</string>
+    <string name="share_recording">Opname delen</string>
+    <string name="recording_not_found">Opname niet gevonden</string>
+    <string name="no_app_to_play_recording">Geen app gevonden om de opname af te spelen</string>
+    <string name="share_failed">Delen mislukt</string>
+    <string name="transcription_not_available">Transcriptie is nog niet beschikbaar</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Meeluisteren</string>
+    <string name="listen_in_mode">Meeluisteren bij automatisch beantwoorde gesprekken</string>
+    <string name="listen_in_off">Uit</string>
+    <string name="listen_in_notification">Meldingsknop</string>
+    <string name="listen_in_auto">Automatisch (luidspreker aan)</string>
+    <string name="stop_listening">Stoppen met luisteren</string>
+    <string name="hang_up">Ophangen</string>
+    <string name="active_call_channel_name">Actief gesprek</string>
+    <string name="active_call_channel_description">Bediening voor automatisch beantwoorde gesprekken</string>
+    <string name="active_call_notification_title">Automatisch beantwoord: %s</string>
+    <string name="listening_in">Luidspreker aan — gesprek wordt beluisterd</string>
+    <string name="tap_listen_in">Tik op Meeluisteren om het gesprek te horen</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Testen</string>
+    <string name="simulate_call">Inkomend gesprek simuleren</string>
+    <string name="simulate_call_summary">Test de belervaring met een gesimuleerd gesprek</string>
+    <string name="simulated_call_banner">⚡ GESIMULEERD GESPREK</string>
+    <string name="simulated_call_caller">Testbeller</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Gaat over…</string>
+    <string name="simulated_call_active">Gesprek actief</string>
+    <string name="simulated_call_ended">Gesprek beëindigd</string>
+    <string name="simulated_call_auto_answering">Automatisch beantwoorden over %ds…</string>
+    <string name="answer">Beantwoorden</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Ik hoor dat er een gesprek binnenkomt, maar het scherm gaat niet aan. Wat kan ik doen\?</string>
     <string name="faq_1_text">Dit soort problemen kan vele oorzaken hebben, specifiek voor bepaalde apparaten en software. Controleer in ieder geval of voor deze app in de systeeminstellingen \"Weergeven vóór andere apps\" is toegestaan en of bij meldingen voor inkomende gesprekken \"Weergeven op scherm\" is ingeschakeld.</string>

@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Скриване на номерата на клавиатурата за набиране</string>
     <string name="export_call_history">Експортиране на хронология на обажданията</string>
     <string name="import_call_history">Импортиране на хронология на обажданията</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Номер: %s</string>
+    <string name="call_summary_recorded">Записано: %s</string>
+    <string name="call_summary_channel_name">Обобщения на обажданията</string>
+    <string name="call_summary_channel_description">Известия с обобщение след всяко обаждане</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Действия при известие за край на обаждане</string>
+    <string name="notif_action_play_recording">Пусни запис</string>
+    <string name="notif_action_share">Сподели…</string>
+    <string name="notif_action_share_recording">Сподели запис</string>
+    <string name="notif_action_share_transcription">Сподели транскрипция</string>
+    <string name="notif_action_show_transcription">Покажи транскрипция</string>
+    <string name="share_recording">Сподели запис</string>
+    <string name="recording_not_found">Записът не е намерен</string>
+    <string name="no_app_to_play_recording">Не е намерено приложение за възпроизвеждане на записа</string>
+    <string name="share_failed">Споделянето не бе успешно</string>
+    <string name="transcription_not_available">Транскрипцията все още не е налична</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Слушай</string>
+    <string name="listen_in_mode">Слушане на автоматично приети обаждания</string>
+    <string name="listen_in_off">Изкл.</string>
+    <string name="listen_in_notification">Бутон в известието</string>
+    <string name="listen_in_auto">Автоматично (високоговорител вкл.)</string>
+    <string name="stop_listening">Спри слушането</string>
+    <string name="hang_up">Затвори</string>
+    <string name="active_call_channel_name">Активно обаждане</string>
+    <string name="active_call_channel_description">Управление на автоматично приети обаждания</string>
+    <string name="active_call_notification_title">Автоматично прието: %s</string>
+    <string name="listening_in">Високоговорител вкл. — слушане на обаждането</string>
+    <string name="tap_listen_in">Натиснете Слушай, за да чуете обаждането</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Тестване</string>
+    <string name="simulate_call">Симулирай входящо обаждане</string>
+    <string name="simulate_call_summary">Тествайте изживяването на обаждащия се със симулирано обаждане</string>
+    <string name="simulated_call_banner">⚡ СИМУЛИРАНО ОБАЖДАНЕ</string>
+    <string name="simulated_call_caller">Тестов обаждащ се</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Звъни…</string>
+    <string name="simulated_call_active">Обаждането е активно</string>
+    <string name="simulated_call_ended">Обаждането приключи</string>
+    <string name="simulated_call_auto_answering">Автоматичен отговор след %d сек…</string>
+    <string name="answer">Отговори</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Чувам входящи повиквания, но екранът не се включва. Какво мога да направя\?</string>
     <string name="faq_1_text">Такива проблеми могат да имат много специфични за устройството и системата причини, трудно е да се каже като цяло. Трябва да се огледате в настройките на вашето устройство и да се уверите, че на приложението е разрешено да изскача, когато е във фонов режим и да позволява показване върху други приложения.</string>

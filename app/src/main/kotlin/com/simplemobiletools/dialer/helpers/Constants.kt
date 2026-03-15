@@ -79,6 +79,13 @@ const val LISTEN_IN_AUTO = 2
 // Listen-in preference key
 const val LISTEN_IN_MODE = "listen_in_mode"
 
+// TTS settings
+const val TTS_ENGINE = "tts_engine"
+const val TTS_LANGUAGE = "tts_language"
+
+// Per-SIM auto-answer settings (stored as JSON map keyed by SIM id)
+const val PER_SIM_SETTINGS = "per_sim_settings"
+
 // Active call notification actions
 private const val ACTIVE_CALL_PATH = "com.simplemobiletools.dialer.action."
 const val ACTION_LISTEN_IN = ACTIVE_CALL_PATH + "listen_in"

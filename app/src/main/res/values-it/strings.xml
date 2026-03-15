@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Nascondi i numeri del tastierino</string>
     <string name="export_call_history">Esporta la cronologia delle chiamate</string>
     <string name="import_call_history">Importa la cronologia delle chiamate</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Numero: %s</string>
+    <string name="call_summary_recorded">Registrata: %s</string>
+    <string name="call_summary_channel_name">Riepiloghi chiamate</string>
+    <string name="call_summary_channel_description">Notifiche con riepilogo dopo ogni chiamata</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Azioni notifica fine chiamata</string>
+    <string name="notif_action_play_recording">Riproduci registrazione</string>
+    <string name="notif_action_share">Condividi…</string>
+    <string name="notif_action_share_recording">Condividi registrazione</string>
+    <string name="notif_action_share_transcription">Condividi trascrizione</string>
+    <string name="notif_action_show_transcription">Mostra trascrizione</string>
+    <string name="share_recording">Condividi registrazione</string>
+    <string name="recording_not_found">Registrazione non trovata</string>
+    <string name="no_app_to_play_recording">Nessuna app trovata per riprodurre la registrazione</string>
+    <string name="share_failed">Impossibile condividere</string>
+    <string name="transcription_not_available">Trascrizione non ancora disponibile</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Ascolta</string>
+    <string name="listen_in_mode">Ascolta le chiamate con risposta automatica</string>
+    <string name="listen_in_off">Disattivato</string>
+    <string name="listen_in_notification">Pulsante notifica</string>
+    <string name="listen_in_auto">Automatico (altoparlante attivo)</string>
+    <string name="stop_listening">Smetti di ascoltare</string>
+    <string name="hang_up">Riaggancia</string>
+    <string name="active_call_channel_name">Chiamata attiva</string>
+    <string name="active_call_channel_description">Controlli per le chiamate con risposta automatica</string>
+    <string name="active_call_notification_title">Risposta automatica: %s</string>
+    <string name="listening_in">Altoparlante attivo — ascolto della chiamata</string>
+    <string name="tap_listen_in">Tocca Ascolta per sentire la chiamata</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Test</string>
+    <string name="simulate_call">Simula chiamata in arrivo</string>
+    <string name="simulate_call_summary">Testa l\'esperienza del chiamante con una chiamata simulata</string>
+    <string name="simulated_call_banner">⚡ CHIAMATA SIMULATA</string>
+    <string name="simulated_call_caller">Chiamante di prova</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Squilla…</string>
+    <string name="simulated_call_active">Chiamata attiva</string>
+    <string name="simulated_call_ended">Chiamata terminata</string>
+    <string name="simulated_call_auto_answering">Risposta automatica tra %ds…</string>
+    <string name="answer">Rispondi</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Sento le chiamate in arrivo, ma lo schermo non si accende. Cosa posso fare\?</string>
     <string name="faq_1_text">Tali problemi possono avere molte ragioni specifiche per il dispositivo e il sistema, è difficile identificarle in generale. Dovresti dare un\'occhiata alle impostazioni del dispositivo e assicurarti che l\'app sia autorizzata a comparire quando è in background e che permetta la visualizzazione sopra le altre app.</string>

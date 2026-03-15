@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">隐藏拨号盘号码</string>
     <string name="export_call_history">导出通话记录</string>
     <string name="import_call_history">导入通话记录</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">号码：%s</string>
+    <string name="call_summary_recorded">已录音：%s</string>
+    <string name="call_summary_channel_name">通话摘要</string>
+    <string name="call_summary_channel_description">每次通话后的摘要通知</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">通话结束通知操作</string>
+    <string name="notif_action_play_recording">播放录音</string>
+    <string name="notif_action_share">分享…</string>
+    <string name="notif_action_share_recording">分享录音</string>
+    <string name="notif_action_share_transcription">分享转录</string>
+    <string name="notif_action_show_transcription">显示转录</string>
+    <string name="share_recording">分享录音</string>
+    <string name="recording_not_found">未找到录音</string>
+    <string name="no_app_to_play_recording">未找到可播放录音的应用</string>
+    <string name="share_failed">无法分享</string>
+    <string name="transcription_not_available">转录尚不可用</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">收听</string>
+    <string name="listen_in_mode">收听自动接听的通话</string>
+    <string name="listen_in_off">关闭</string>
+    <string name="listen_in_notification">通知按钮</string>
+    <string name="listen_in_auto">自动（扬声器开启）</string>
+    <string name="stop_listening">停止收听</string>
+    <string name="hang_up">挂断</string>
+    <string name="active_call_channel_name">活动通话</string>
+    <string name="active_call_channel_description">自动接听通话的控制</string>
+    <string name="active_call_notification_title">已自动接听：%s</string>
+    <string name="listening_in">扬声器已开启 — 正在收听通话</string>
+    <string name="tap_listen_in">点击收听以听取通话</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">测试</string>
+    <string name="simulate_call">模拟来电</string>
+    <string name="simulate_call_summary">通过模拟来电测试来电体验</string>
+    <string name="simulated_call_banner">⚡ 模拟通话</string>
+    <string name="simulated_call_caller">测试来电者</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">响铃中…</string>
+    <string name="simulated_call_active">通话中</string>
+    <string name="simulated_call_ended">通话结束</string>
+    <string name="simulated_call_auto_answering">%d秒后自动接听…</string>
+    <string name="answer">接听</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">我听到来电声音，但屏幕不亮。我该怎么办\?</string>
     <string name="faq_1_text">这样的问题可能有很多设备和系统的具体原因，很难笼统地说。你应该查看你的设备设置，确保应用在后台时被允许弹出，并允许其显示在其他应用上方。</string>

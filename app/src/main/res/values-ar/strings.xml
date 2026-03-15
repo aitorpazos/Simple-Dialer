@@ -74,6 +74,95 @@
     <string name="hide_dialpad_numbers">اخفي ارقام لوحت المفاتيح</string>
     <string name="export_call_history">تصدير سجل المكالمات</string>
     <string name="import_call_history">استيراد سجل المكالمات</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">الرقم: %s</string>
+    <string name="call_summary_recorded">مسجلة: %s</string>
+    <string name="call_summary_channel_name">ملخصات المكالمات</string>
+    <string name="call_summary_channel_description">إشعارات بملخص المكالمة بعد كل مكالمة</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">إجراءات إشعار نهاية المكالمة</string>
+    <string name="notif_action_play_recording">تشغيل التسجيل</string>
+    <string name="notif_action_share">مشاركة…</string>
+    <string name="notif_action_share_recording">مشاركة التسجيل</string>
+    <string name="notif_action_share_transcription">مشاركة النسخ</string>
+    <string name="notif_action_show_transcription">عرض النسخ</string>
+    <string name="share_recording">مشاركة التسجيل</string>
+    <string name="recording_not_found">لم يتم العثور على التسجيل</string>
+    <string name="no_app_to_play_recording">لم يتم العثور على تطبيق لتشغيل التسجيل</string>
+    <string name="share_failed">تعذرت المشاركة</string>
+    <string name="transcription_not_available">النسخ غير متاح بعد</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">استماع</string>
+    <string name="listen_in_mode">الاستماع للمكالمات المُجاب عليها تلقائياً</string>
+    <string name="listen_in_off">إيقاف</string>
+    <string name="listen_in_notification">زر الإشعار</string>
+    <string name="listen_in_auto">تلقائي (مكبر الصوت مفعّل)</string>
+    <string name="stop_listening">إيقاف الاستماع</string>
+    <string name="hang_up">إنهاء المكالمة</string>
+    <string name="active_call_channel_name">مكالمة نشطة</string>
+    <string name="active_call_channel_description">عناصر التحكم للمكالمات المُجاب عليها تلقائياً</string>
+    <string name="active_call_notification_title">رد تلقائي: %s</string>
+    <string name="listening_in">مكبر الصوت مفعّل — جارٍ الاستماع للمكالمة</string>
+    <string name="tap_listen_in">اضغط استماع لسماع المكالمة</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">اختبار</string>
+    <string name="simulate_call">محاكاة مكالمة واردة</string>
+    <string name="simulate_call_summary">اختبر تجربة المتصل بمكالمة محاكاة</string>
+    <string name="simulated_call_banner">⚡ مكالمة محاكاة</string>
+    <string name="simulated_call_caller">متصل تجريبي</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">جارٍ الرنين…</string>
+    <string name="simulated_call_active">المكالمة نشطة</string>
+    <string name="simulated_call_ended">انتهت المكالمة</string>
+    <string name="simulated_call_auto_answering">رد تلقائي خلال %d ثانية…</string>
+    <string name="answer">رد</string>
+
+    <!-- Call Recording -->
+    <string name="call_recording">تسجيل المكالمات</string>
+    <string name="enable_call_recording">تسجيل جميع المكالمات</string>
+    <string name="call_recording_started">بدأ التسجيل</string>
+    <string name="call_recording_stopped">تم حفظ التسجيل</string>
+    <string name="call_recording_failed">فشل التسجيل</string>
+    <string name="call_recording_path">مسار تخزين التسجيلات</string>
+    <string name="call_recording_path_default">الافتراضي (تخزين التطبيق)</string>
+    <string name="call_recording_path_change">اختيار مجلد مختلف</string>
+
+    <!-- Auto Answer -->
+    <string name="auto_answer">الرد التلقائي</string>
+    <string name="auto_answer_mode">الرد التلقائي على المكالمات الواردة</string>
+    <string name="auto_answer_none">معطّل</string>
+    <string name="auto_answer_all">جميع المكالمات</string>
+    <string name="auto_answer_unknown">المتصلون المجهولون فقط</string>
+    <string name="auto_answer_active">جارٍ الرد التلقائي على المكالمة…</string>
+    <string name="auto_answer_greeting">رسالة ترحيب الرد التلقائي</string>
+    <string name="auto_answer_greeting_hint">النص المنطوق للمتصل عند الرد التلقائي</string>
+    <string name="preview_greeting">🔊 استمع لمعاينة الترحيب</string>
+    <string name="preview_greeting_playing">جارٍ تشغيل الترحيب…</string>
+    <string name="greeting_empty">نص الترحيب فارغ</string>
+
+    <!-- Call Summary -->
+    <string name="call_summary_title">انتهت المكالمة: %s</string>
+    <string name="call_summary_duration">المدة: %s</string>
+
+    <!-- TTS Settings -->
+    <string name="tts_engine">محرك تحويل النص إلى كلام</string>
+    <string name="tts_engine_default">الافتراضي للنظام</string>
+    <string name="tts_language">لغة تحويل النص إلى كلام</string>
+    <string name="tts_language_default">الافتراضي للجهاز</string>
+
+    <!-- Per-SIM Settings -->
+    <string name="per_sim_settings">إعدادات الرد التلقائي لكل شريحة SIM</string>
+    <string name="per_sim_settings_summary">تهيئة اللغة والترحيب لكل شريحة SIM</string>
+    <string name="sim_greeting">ترحيب الشريحة %d</string>
+    <string name="sim_language">لغة الشريحة %d</string>
+    <string name="sim_greeting_hint">ترحيب مخصص لهذه الشريحة (اتركه فارغاً للإعداد العام)</string>
+    <string name="sim_settings_title">الشريحة %d — %s</string>
+    <string name="sim_settings_configured">مهيأ</string>
+    <string name="sim_settings_default">يستخدم الإعدادات العامة</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">أسمع مكالمات واردة، ولكن الشاشة لا تعمل. ماذا أفعل؟</string>
     <string name="faq_1_text">يمكن أن يكون لمثل هذه المشكلات العديد من الأسباب الخاصة بالجهاز والنظام ، والتي يصعب تحديدها بشكل عام. يجب أن تنظر حولك في إعدادات جهازك وتأكد من السماح للتطبيق بالظهور عندما يكون في الخلفية والسماح بالعرض فوق التطبيقات الأخرى.</string>

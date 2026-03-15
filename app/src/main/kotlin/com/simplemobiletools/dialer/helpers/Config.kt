@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken
 import com.simplemobiletools.commons.helpers.BaseConfig
 import com.simplemobiletools.dialer.extensions.getPhoneAccountHandleModel
 import com.simplemobiletools.dialer.extensions.putPhoneAccountHandle
+import com.simplemobiletools.dialer.models.SimAutoAnswerSettings
 import com.simplemobiletools.dialer.models.SpeedDial
 
 class Config(context: Context) : BaseConfig(context) {
@@ -113,4 +114,36 @@ class Config(context: Context) : BaseConfig(context) {
     var listenInMode: Int
         get() = prefs.getInt(LISTEN_IN_MODE, LISTEN_IN_NOTIFICATION)
         set(value) = prefs.edit().putInt(LISTEN_IN_MODE, value).apply()
+
+    var ttsEngine: String
+        get() = prefs.getString(TTS_ENGINE, "") ?: ""
+        set(value) = prefs.edit().putString(TTS_ENGINE, value).apply()
+
+    var ttsLanguage: String
+        get() = prefs.getString(TTS_LANGUAGE, "") ?: ""
+        set(value) = prefs.edit().putString(TTS_LANGUAGE, value).apply()
+
+    /**
+     * Per-SIM auto-answer settings stored as JSON: {"1": {"language":"es-ES","greeting":"Hola..."}, ...}
+     * Key is the SIM id (1-based index from getAvailableSIMCardLabels).
+     */
+    fun getPerSimSettings(): Map<String, SimAutoAnswerSettings> {
+        val json = prefs.getString(PER_SIM_SETTINGS, null) ?: return emptyMap()
+        return try {
+            val type = object : TypeToken<Map<String, SimAutoAnswerSettings>>() {}.type
+            Gson().fromJson(json, type) ?: emptyMap()
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    fun getSimSettings(simId: String): SimAutoAnswerSettings {
+        return getPerSimSettings()[simId] ?: SimAutoAnswerSettings()
+    }
+
+    fun setSimSettings(simId: String, settings: SimAutoAnswerSettings) {
+        val map = getPerSimSettings().toMutableMap()
+        map[simId] = settings
+        prefs.edit().putString(PER_SIM_SETTINGS, Gson().toJson(map)).apply()
+    }
 }

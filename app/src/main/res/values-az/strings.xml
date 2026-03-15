@@ -75,6 +75,95 @@
     <string name="export_call_history">Export call history</string>
     <string name="import_call_history">Import call history</string>
 
+    <!-- Call Summary -->
+    <string name="call_summary_number">Nömrə: %s</string>
+    <string name="call_summary_recorded">Qeydə alınıb: %s</string>
+    <string name="call_summary_channel_name">Zəng xülasələri</string>
+    <string name="call_summary_channel_description">Hər zəngdən sonra xülasə bildirişləri</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Zəng sonu bildiriş əməliyyatları</string>
+    <string name="notif_action_play_recording">Qeydi oxut</string>
+    <string name="notif_action_share">Paylaş…</string>
+    <string name="notif_action_share_recording">Qeydi paylaş</string>
+    <string name="notif_action_share_transcription">Transkripsiyasını paylaş</string>
+    <string name="notif_action_show_transcription">Transkripsiyasını göstər</string>
+    <string name="share_recording">Qeydi paylaş</string>
+    <string name="recording_not_found">Qeyd tapılmadı</string>
+    <string name="no_app_to_play_recording">Qeydi oxutmaq üçün tətbiq tapılmadı</string>
+    <string name="share_failed">Paylaşmaq mümkün olmadı</string>
+    <string name="transcription_not_available">Transkripsiya hələ mövcud deyil</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Dinlə</string>
+    <string name="listen_in_mode">Avtomatik cavablanan zənglərə qulaq as</string>
+    <string name="listen_in_off">Söndür</string>
+    <string name="listen_in_notification">Bildiriş düyməsi</string>
+    <string name="listen_in_auto">Avtomatik (dinamik açıq)</string>
+    <string name="stop_listening">Dinləməyi dayandır</string>
+    <string name="hang_up">Bağla</string>
+    <string name="active_call_channel_name">Aktiv zəng</string>
+    <string name="active_call_channel_description">Avtomatik cavablanan zənglər üçün idarəetmə</string>
+    <string name="active_call_notification_title">Avtomatik cavablandı: %s</string>
+    <string name="listening_in">Dinamik açıq — zəngə qulaq asılır</string>
+    <string name="tap_listen_in">Zəngə qulaq asmaq üçün Dinlə düyməsinə basın</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Test</string>
+    <string name="simulate_call">Gələn zəngi simulyasiya et</string>
+    <string name="simulate_call_summary">Simulyasiya edilmiş zənglə zəng edənin təcrübəsini yoxlayın</string>
+    <string name="simulated_call_banner">⚡ SİMULYASİYA ZƏNG</string>
+    <string name="simulated_call_caller">Test zəng edən</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Zəng çalır…</string>
+    <string name="simulated_call_active">Zəng aktivdir</string>
+    <string name="simulated_call_ended">Zəng bitdi</string>
+    <string name="simulated_call_auto_answering">%d saniyə sonra avtomatik cavab…</string>
+    <string name="answer">Cavab ver</string>
+
+    <!-- Call Recording -->
+    <string name="call_recording">Zəng yazması</string>
+    <string name="enable_call_recording">Bütün zəngləri yaz</string>
+    <string name="call_recording_started">Yazma başladı</string>
+    <string name="call_recording_stopped">Yazma saxlanıldı</string>
+    <string name="call_recording_failed">Yazma uğursuz oldu</string>
+    <string name="call_recording_path">Yazmaların saxlanma yolu</string>
+    <string name="call_recording_path_default">Standart (tətbiq yaddaşı)</string>
+    <string name="call_recording_path_change">Fərqli qovluq seç</string>
+
+    <!-- Auto Answer -->
+    <string name="auto_answer">Avtomatik cavab</string>
+    <string name="auto_answer_mode">Gələn zənglərə avtomatik cavab ver</string>
+    <string name="auto_answer_none">Deaktiv</string>
+    <string name="auto_answer_all">Bütün zənglər</string>
+    <string name="auto_answer_unknown">Yalnız naməlum zənglər</string>
+    <string name="auto_answer_active">Zəngə avtomatik cavab verilir…</string>
+    <string name="auto_answer_greeting">Avtomatik cavab salamlama mətni</string>
+    <string name="auto_answer_greeting_hint">Avtomatik cavab verərkən zəng edənə deyilən mətn</string>
+    <string name="preview_greeting">🔊 Salamlama önizləməsini dinlə</string>
+    <string name="preview_greeting_playing">Salamlama oxunur…</string>
+    <string name="greeting_empty">Salamlama mətni boşdur</string>
+
+    <!-- Call Summary -->
+    <string name="call_summary_title">Zəng bitdi: %s</string>
+    <string name="call_summary_duration">Müddət: %s</string>
+
+    <!-- TTS Settings -->
+    <string name="tts_engine">TTS mühərriki</string>
+    <string name="tts_engine_default">Sistem standartı</string>
+    <string name="tts_language">TTS dili</string>
+    <string name="tts_language_default">Cihaz standartı</string>
+
+    <!-- Per-SIM Settings -->
+    <string name="per_sim_settings">Hər SIM üçün avtomatik cavab parametrləri</string>
+    <string name="per_sim_settings_summary">Hər SIM kart üçün dil və salamlama tənzimləyin</string>
+    <string name="sim_greeting">SIM %d üçün salamlama</string>
+    <string name="sim_language">SIM %d üçün dil</string>
+    <string name="sim_greeting_hint">Bu SIM üçün xüsusi salamlama (ümumi üçün boş buraxın)</string>
+    <string name="sim_settings_title">SIM %d — %s</string>
+    <string name="sim_settings_configured">Tənzimlənib</string>
+    <string name="sim_settings_default">Ümumi standartları istifadə edir</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>
     <string name="faq_1_text">Such issues can have many device and system specific reasons, hard to say in general. You should look around in your device settings and make sure that the app is allowed to pop up when in background and allow displaying over other apps.</string>

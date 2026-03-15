@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">隱藏撥號鍵盤數字</string>
     <string name="export_call_history">匯出通話紀錄</string>
     <string name="import_call_history">匯入通話紀錄</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">號碼：%s</string>
+    <string name="call_summary_recorded">已錄音：%s</string>
+    <string name="call_summary_channel_name">通話摘要</string>
+    <string name="call_summary_channel_description">每次通話後的摘要通知</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">通話結束通知操作</string>
+    <string name="notif_action_play_recording">播放錄音</string>
+    <string name="notif_action_share">分享…</string>
+    <string name="notif_action_share_recording">分享錄音</string>
+    <string name="notif_action_share_transcription">分享逐字稿</string>
+    <string name="notif_action_show_transcription">顯示逐字稿</string>
+    <string name="share_recording">分享錄音</string>
+    <string name="recording_not_found">找不到錄音</string>
+    <string name="no_app_to_play_recording">找不到可播放錄音的應用程式</string>
+    <string name="share_failed">無法分享</string>
+    <string name="transcription_not_available">逐字稿尚未可用</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">收聽</string>
+    <string name="listen_in_mode">收聽自動接聽的通話</string>
+    <string name="listen_in_off">關閉</string>
+    <string name="listen_in_notification">通知按鈕</string>
+    <string name="listen_in_auto">自動（擴音器開啟）</string>
+    <string name="stop_listening">停止收聽</string>
+    <string name="hang_up">掛斷</string>
+    <string name="active_call_channel_name">進行中的通話</string>
+    <string name="active_call_channel_description">自動接聽通話的控制項</string>
+    <string name="active_call_notification_title">已自動接聽：%s</string>
+    <string name="listening_in">擴音器已開啟 — 正在收聽通話</string>
+    <string name="tap_listen_in">點按收聽以聆聽通話</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">測試</string>
+    <string name="simulate_call">模擬來電</string>
+    <string name="simulate_call_summary">透過模擬來電測試來電體驗</string>
+    <string name="simulated_call_banner">⚡ 模擬通話</string>
+    <string name="simulated_call_caller">測試來電者</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">響鈴中…</string>
+    <string name="simulated_call_active">通話中</string>
+    <string name="simulated_call_ended">通話結束</string>
+    <string name="simulated_call_auto_answering">%d秒後自動接聽…</string>
+    <string name="answer">接聽</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">我聽到來電，但螢幕沒有亮起。我該怎麼辦？</string>
     <string name="faq_1_text">這種問題可能有許多與裝置和系統特定的原因，一般來說很難確定。您應該查看您的裝置設定，並確保 app 被允許在背景時彈出並允許在其他 app 上顯示。</string>
