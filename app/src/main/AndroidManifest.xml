@@ -35,6 +35,10 @@
     <queries>
         <package android:name="com.simplemobiletools.contacts.pro.debug" />
         <package android:name="com.simplemobiletools.contacts.pro" />
+        <!-- Allow discovery of all TTS engines on Android 11+ -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 
     <application
