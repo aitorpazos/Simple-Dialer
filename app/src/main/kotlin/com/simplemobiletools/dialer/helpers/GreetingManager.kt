@@ -9,96 +9,28 @@ import java.util.*
 
 /**
  * Manages TTS-based greeting playback for auto-answered calls.
- * Plays the configured greeting text through the VOICE_COMMUNICATION stream
- * so the caller hears it, and also supports a local preview mode via the
- * MUSIC stream for testing in Settings.
  *
- * Supports selecting a specific TTS engine and language, and per-SIM overrides.
+ * Each speak request creates a **fresh** TTS instance bound to the requested
+ * engine and language.  This avoids every race-condition and state-leak that
+ * comes from reusing a long-lived TTS object across different engine/language
+ * combinations:
+ *
+ *  - Android TTS engines may silently reset their language after a speak()
+ *    finishes or when the underlying service reconnects.
+ *  - Switching language on an existing instance is unreliable on several OEM
+ *    TTS implementations.
+ *  - Creating a new instance is cheap (~50-100 ms) and guarantees a clean
+ *    state every time.
+ *
+ * The previous instance is always shut down before the new one is created.
  */
 class GreetingManager(private val context: Context) {
     private var tts: TextToSpeech? = null
-    private var isInitialized = false
-    private var pendingAction: (() -> Unit)? = null
     private var onDoneCallback: (() -> Unit)? = null
-    private var currentEngine: String = ""
-    private var currentLanguageTag: String = ""
-
-    private fun ensureTts(engine: String, languageTag: String, onReady: () -> Unit) {
-        val desiredEngine = engine.ifEmpty { context.config.ttsEngine }
-        val desiredLang = languageTag.ifEmpty { context.config.ttsLanguage }
-
-        // If the engine changed we must recreate the TTS instance
-        val needsNewEngine = !isInitialized || tts == null || desiredEngine != currentEngine
-
-        if (needsNewEngine) {
-            // Shut down existing instance
-            if (tts != null) {
-                tts?.stop()
-                tts?.shutdown()
-                tts = null
-                isInitialized = false
-            }
-
-            currentEngine = desiredEngine
-            currentLanguageTag = desiredLang
-            pendingAction = {
-                // Always apply language right before invoking the ready callback
-                applyLanguage(desiredLang)
-                onReady()
-            }
-
-            val initListener = TextToSpeech.OnInitListener { status ->
-                isInitialized = status == TextToSpeech.SUCCESS
-                if (isInitialized) {
-                    tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                        override fun onStart(utteranceId: String?) {}
-                        override fun onDone(utteranceId: String?) {
-                            onDoneCallback?.invoke()
-                            onDoneCallback = null
-                        }
-                        @Deprecated("Deprecated in Java")
-                        override fun onError(utteranceId: String?) {
-                            onDoneCallback?.invoke()
-                            onDoneCallback = null
-                        }
-                    })
-                    pendingAction?.invoke()
-                    pendingAction = null
-                }
-            }
-
-            tts = if (desiredEngine.isNotEmpty()) {
-                TextToSpeech(context, initListener, desiredEngine)
-            } else {
-                TextToSpeech(context, initListener)
-            }
-        } else {
-            // Same engine — reuse instance but always re-apply language
-            // Some TTS engines reset language asynchronously after init
-            currentLanguageTag = desiredLang
-            applyLanguage(desiredLang)
-            onReady()
-        }
-    }
-
-    private fun applyLanguage(languageTag: String) {
-        if (languageTag.isNotEmpty()) {
-            val locale = Locale.forLanguageTag(languageTag)
-            tts?.language = locale
-            currentLanguageTag = languageTag
-        } else {
-            tts?.language = Locale.getDefault()
-            currentLanguageTag = ""
-        }
-    }
 
     /**
      * Play the configured greeting through VOICE_COMMUNICATION stream
      * so the remote caller hears it during an active call.
-     *
-     * @param greeting Override greeting text (or null to use global config)
-     * @param languageTag BCP-47 language tag override (or empty for global/default)
-     * @param engine TTS engine package name override (or empty for global/default)
      */
     fun playGreetingForCall(
         greeting: String? = null,
@@ -106,27 +38,19 @@ class GreetingManager(private val context: Context) {
         engine: String = "",
         onDone: (() -> Unit)? = null
     ) {
-        val text = greeting ?: context.config.autoAnswerGreeting
-        if (text.isEmpty()) {
-            onDone?.invoke()
-            return
-        }
-
-        onDoneCallback = onDone
-        ensureTts(engine, languageTag) {
-            val params = android.os.Bundle()
-            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_VOICE_CALL)
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "greeting_call")
-        }
+        speakInternal(
+            text = greeting ?: context.config.autoAnswerGreeting,
+            engine = engine,
+            languageTag = languageTag,
+            stream = AudioManager.STREAM_VOICE_CALL,
+            utteranceId = "greeting_call",
+            onDone = onDone
+        )
     }
 
     /**
      * Play the greeting through the MUSIC stream so the user can hear
      * what callers will hear — for testing in Settings.
-     *
-     * @param greeting Override greeting text (or null to use global config)
-     * @param languageTag BCP-47 language tag override (or empty for global/default)
-     * @param engine TTS engine package name override (or empty for global/default)
      */
     fun playGreetingPreview(
         greeting: String? = null,
@@ -134,36 +58,98 @@ class GreetingManager(private val context: Context) {
         engine: String = "",
         onDone: (() -> Unit)? = null
     ) {
-        val text = greeting ?: context.config.autoAnswerGreeting
+        speakInternal(
+            text = greeting ?: context.config.autoAnswerGreeting,
+            engine = engine,
+            languageTag = languageTag,
+            stream = AudioManager.STREAM_MUSIC,
+            utteranceId = "greeting_preview",
+            onDone = onDone
+        )
+    }
+
+    // ---------------------------------------------------------------
+    // Core: create a fresh TTS instance for every speak request
+    // ---------------------------------------------------------------
+
+    private fun speakInternal(
+        text: String,
+        engine: String,
+        languageTag: String,
+        stream: Int,
+        utteranceId: String,
+        onDone: (() -> Unit)?
+    ) {
         if (text.isEmpty()) {
             onDone?.invoke()
             return
         }
 
+        // Resolve effective engine/language from config if not overridden
+        val desiredEngine = engine.ifEmpty { context.config.ttsEngine }
+        val desiredLang = languageTag.ifEmpty { context.config.ttsLanguage }
+
+        // Tear down any previous instance completely
+        destroyTts()
+
         onDoneCallback = onDone
-        ensureTts(engine, languageTag) {
+
+        val initListener = TextToSpeech.OnInitListener { status ->
+            if (status != TextToSpeech.SUCCESS) {
+                onDoneCallback?.invoke()
+                onDoneCallback = null
+                return@OnInitListener
+            }
+
+            val instance = tts ?: return@OnInitListener
+
+            // Apply language
+            if (desiredLang.isNotEmpty()) {
+                instance.language = Locale.forLanguageTag(desiredLang)
+            } else {
+                instance.language = Locale.getDefault()
+            }
+
+            // Utterance listener
+            instance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {}
+                override fun onDone(utteranceId: String?) {
+                    onDoneCallback?.invoke()
+                    onDoneCallback = null
+                }
+                @Deprecated("Deprecated in Java")
+                override fun onError(utteranceId: String?) {
+                    onDoneCallback?.invoke()
+                    onDoneCallback = null
+                }
+            })
+
+            // Speak
             val params = android.os.Bundle()
-            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
-            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, params, "greeting_preview")
+            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream)
+            instance.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
+        }
+
+        tts = if (desiredEngine.isNotEmpty()) {
+            TextToSpeech(context, initListener, desiredEngine)
+        } else {
+            TextToSpeech(context, initListener)
         }
     }
 
+    // ---------------------------------------------------------------
+    // Engine discovery (stateless — uses a temporary TTS instance)
+    // ---------------------------------------------------------------
+
     /**
      * Get the list of available TTS engines on the device.
-     * Creates a temporary TextToSpeech instance to reliably query the engine
-     * list via the standard API, which handles Android 11+ package visibility
-     * correctly without manual PackageManager queries.
      */
     fun getAvailableEngines(): List<TextToSpeech.EngineInfo> {
-        // If we already have an initialised TTS instance, use its engine list
+        // If we have a live instance, ask it first
         tts?.engines?.let { if (it.isNotEmpty()) return it }
 
-        // Create a temporary TTS instance just to query engines.
-        // The constructor is synchronous enough that .engines is available
-        // immediately (it queries PackageManager internally with the correct
-        // flags and component resolution).
         val tempTts = try {
-            TextToSpeech(context) { /* no-op init listener */ }
+            TextToSpeech(context) { /* no-op */ }
         } catch (_: Exception) {
             return emptyList()
         }
@@ -184,19 +170,23 @@ class GreetingManager(private val context: Context) {
         return tts?.availableLanguages ?: emptySet()
     }
 
+    // ---------------------------------------------------------------
+    // Lifecycle
+    // ---------------------------------------------------------------
+
     fun stopGreeting() {
         tts?.stop()
         onDoneCallback = null
     }
 
     fun shutdown() {
+        destroyTts()
+        onDoneCallback = null
+    }
+
+    private fun destroyTts() {
         tts?.stop()
         tts?.shutdown()
         tts = null
-        isInitialized = false
-        pendingAction = null
-        onDoneCallback = null
-        currentEngine = ""
-        currentLanguageTag = ""
     }
 }
