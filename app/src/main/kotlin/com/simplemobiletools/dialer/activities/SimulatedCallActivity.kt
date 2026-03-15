@@ -107,7 +107,11 @@ class SimulatedCallActivity : AppCompatActivity() {
         val greeting = config.autoAnswerGreeting
         if (greeting.isNotEmpty()) {
             handler.postDelayed({
-                greetingManager.playGreetingForCall()
+                greetingManager.playGreetingForCall(
+                    greeting = greeting,
+                    languageTag = config.ttsLanguage,
+                    engine = config.ttsEngine
+                )
             }, 500)
         }
 

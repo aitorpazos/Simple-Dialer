@@ -75,6 +75,52 @@
     <string name="export_call_history">Export call history</string>
     <string name="import_call_history">Import call history</string>
 
+    <!-- Call Summary -->
+    <string name="call_summary_number">Numero: %s</string>
+    <string name="call_summary_recorded">Registrita: %s</string>
+    <string name="call_summary_channel_name">Vokrezumoj</string>
+    <string name="call_summary_channel_description">Sciigoj kun resumo post ĉiu voko</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Agoj de sciigo ĉe vokfino</string>
+    <string name="notif_action_play_recording">Ludi registraĵon</string>
+    <string name="notif_action_share">Kunhavigi…</string>
+    <string name="notif_action_share_recording">Kunhavigi registraĵon</string>
+    <string name="notif_action_share_transcription">Kunhavigi transskribon</string>
+    <string name="notif_action_show_transcription">Montri transskribon</string>
+    <string name="share_recording">Kunhavigi registraĵon</string>
+    <string name="recording_not_found">Registraĵo ne trovita</string>
+    <string name="no_app_to_play_recording">Neniu apo trovita por ludi registraĵon</string>
+    <string name="share_failed">Kunhavigo malsukcesis</string>
+    <string name="transcription_not_available">Transskribo ankoraŭ ne disponebla</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Aŭskulti</string>
+    <string name="listen_in_mode">Aŭskulti aŭtomate responditajn vokojn</string>
+    <string name="listen_in_off">Malŝaltita</string>
+    <string name="listen_in_notification">Sciiga butono</string>
+    <string name="listen_in_auto">Aŭtomate (laŭtparolilo ŝaltita)</string>
+    <string name="stop_listening">Ĉesi aŭskulti</string>
+    <string name="hang_up">Fini vokon</string>
+    <string name="active_call_channel_name">Aktiva voko</string>
+    <string name="active_call_channel_description">Regilo por aŭtomate responditaj vokoj</string>
+    <string name="active_call_notification_title">Aŭtomate respondita: %s</string>
+    <string name="listening_in">Laŭtparolilo ŝaltita — aŭskultante vokon</string>
+    <string name="tap_listen_in">Tuŝu Aŭskulti por aŭdi la vokon</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Testado</string>
+    <string name="simulate_call">Simuli alvenantan vokon</string>
+    <string name="simulate_call_summary">Testu la sperton de la vokanto per simulita voko</string>
+    <string name="simulated_call_banner">⚡ SIMULITA VOKO</string>
+    <string name="simulated_call_caller">Testa vokanto</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Sonoras…</string>
+    <string name="simulated_call_active">Voko aktiva</string>
+    <string name="simulated_call_ended">Voko finiĝis</string>
+    <string name="simulated_call_auto_answering">Aŭtomata respondo post %d s…</string>
+    <string name="answer">Respondi</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>
     <string name="faq_1_text">Such issues can have many device and system specific reasons, hard to say in general. You should look around in your device settings and make sure that the app is allowed to pop up when in background and allow displaying over other apps.</string>

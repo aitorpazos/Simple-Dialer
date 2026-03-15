@@ -6,8 +6,12 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.speech.tts.TextToSpeech
+import android.view.LayoutInflater
 import android.view.Menu
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.documentfile.provider.DocumentFile
 import com.simplemobiletools.commons.activities.ManageBlockedNumbersActivity
@@ -22,8 +26,10 @@ import com.simplemobiletools.dialer.databinding.ActivitySettingsBinding
 import com.simplemobiletools.dialer.dialogs.ExportCallHistoryDialog
 import com.simplemobiletools.dialer.dialogs.ManageVisibleTabsDialog
 import com.simplemobiletools.dialer.extensions.config
+import com.simplemobiletools.dialer.extensions.getAvailableSIMCardLabels
 import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.models.RecentCall
+import com.simplemobiletools.dialer.models.SimAutoAnswerSettings
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -114,6 +120,9 @@ class SettingsActivity : SimpleActivity() {
         setupAutoAnswerGreeting()
         setupPreviewGreeting()
         setupListenIn()
+        setupTtsEngine()
+        setupTtsLanguage()
+        setupPerSimSettings()
         setupSimulateCall()
         updateTextColors(binding.settingsHolder)
 
@@ -401,6 +410,9 @@ class SettingsActivity : SimpleActivity() {
         binding.settingsAutoAnswerGreetingHolder.beVisibleIf(enabled)
         binding.settingsPreviewGreetingHolder.beVisibleIf(enabled)
         binding.settingsListenInHolder.beVisibleIf(enabled)
+        binding.settingsTtsEngineHolder.beVisibleIf(enabled)
+        binding.settingsTtsLanguageHolder.beVisibleIf(enabled)
+        binding.settingsPerSimContainer.beVisibleIf(enabled)
     }
 
     private fun setupAutoAnswerGreeting() {
@@ -434,7 +446,11 @@ class SettingsActivity : SimpleActivity() {
             }
 
             toast(R.string.preview_greeting_playing)
-            greetingManager.playGreetingPreview {
+            greetingManager.playGreetingPreview(
+                greeting = greeting,
+                languageTag = config.ttsLanguage,
+                engine = config.ttsEngine
+            ) {
                 runOnUiThread {
                     // Preview finished
                 }
@@ -466,6 +482,291 @@ class SettingsActivity : SimpleActivity() {
                 else -> R.string.listen_in_off
             }
         )
+    }
+
+    private fun setupTtsEngine() {
+        updateTtsEngineLabel()
+        binding.settingsTtsEngineHolder.setOnClickListener {
+            val engines = greetingManager.getAvailableEngines()
+            if (engines.isEmpty()) {
+                toast(R.string.tts_engine_default)
+                return@setOnClickListener
+            }
+
+            val items = arrayListOf(RadioItem(0, getString(R.string.tts_engine_default)))
+            engines.forEachIndexed { index, engine ->
+                items.add(RadioItem(index + 1, engine.label))
+            }
+
+            val currentEngine = config.ttsEngine
+            val selectedIndex = if (currentEngine.isEmpty()) {
+                0
+            } else {
+                val idx = engines.indexOfFirst { it.name == currentEngine }
+                if (idx >= 0) idx + 1 else 0
+            }
+
+            RadioGroupDialog(this@SettingsActivity, items, selectedIndex) {
+                val selected = it as Int
+                config.ttsEngine = if (selected == 0) "" else engines[selected - 1].name
+                updateTtsEngineLabel()
+                // Reset language when engine changes since available languages differ
+                config.ttsLanguage = ""
+                updateTtsLanguageLabel()
+            }
+        }
+    }
+
+    private fun updateTtsEngineLabel() {
+        val engineName = config.ttsEngine
+        if (engineName.isEmpty()) {
+            binding.settingsTtsEngine.text = getString(R.string.tts_engine_default)
+        } else {
+            val engines = greetingManager.getAvailableEngines()
+            val label = engines.firstOrNull { it.name == engineName }?.label ?: engineName
+            binding.settingsTtsEngine.text = label
+        }
+    }
+
+    private fun setupTtsLanguage() {
+        updateTtsLanguageLabel()
+        binding.settingsTtsLanguageHolder.setOnClickListener {
+            // We need TTS initialised to query available languages
+            // Use a temporary TTS with the selected engine
+            val enginePkg = config.ttsEngine
+            val initListener = TextToSpeech.OnInitListener { status ->
+                if (status != TextToSpeech.SUCCESS) {
+                    runOnUiThread { toast(R.string.tts_language_default) }
+                    return@OnInitListener
+                }
+            }
+
+            val tempTts = if (enginePkg.isNotEmpty()) {
+                TextToSpeech(this, initListener, enginePkg)
+            } else {
+                TextToSpeech(this, initListener)
+            }
+
+            // Give TTS a moment to initialise then query languages
+            android.os.Handler(mainLooper).postDelayed({
+                val locales = try {
+                    tempTts.availableLanguages?.toList()?.sortedBy { it.displayName } ?: emptyList()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+
+                if (locales.isEmpty()) {
+                    tempTts.shutdown()
+                    toast(R.string.tts_language_default)
+                    return@postDelayed
+                }
+
+                val items = arrayListOf(RadioItem(0, getString(R.string.tts_language_default)))
+                locales.forEachIndexed { index, locale ->
+                    items.add(RadioItem(index + 1, locale.displayName))
+                }
+
+                val currentTag = config.ttsLanguage
+                val selectedIndex = if (currentTag.isEmpty()) {
+                    0
+                } else {
+                    val idx = locales.indexOfFirst { it.toLanguageTag() == currentTag }
+                    if (idx >= 0) idx + 1 else 0
+                }
+
+                RadioGroupDialog(this@SettingsActivity, items, selectedIndex) {
+                    val selected = it as Int
+                    config.ttsLanguage = if (selected == 0) "" else locales[selected - 1].toLanguageTag()
+                    updateTtsLanguageLabel()
+                }
+
+                tempTts.shutdown()
+            }, 1000)
+        }
+    }
+
+    private fun updateTtsLanguageLabel() {
+        val tag = config.ttsLanguage
+        binding.settingsTtsLanguage.text = if (tag.isEmpty()) {
+            getString(R.string.tts_language_default)
+        } else {
+            Locale.forLanguageTag(tag).displayName
+        }
+    }
+
+    private fun setupPerSimSettings() {
+        val container = binding.settingsPerSimContainer
+        container.removeAllViews()
+
+        val simAccounts = getAvailableSIMCardLabels()
+        if (simAccounts.size < 2) {
+            // No point showing per-SIM settings with a single SIM
+            container.beGone()
+            return
+        }
+
+        container.beVisibleIf(config.autoAnswerMode != AUTO_ANSWER_NONE)
+
+        for (sim in simAccounts) {
+            val simId = sim.id.toString()
+            val simSettings = config.getSimSettings(simId)
+
+            // Create a settings row for each SIM
+            val holder = RelativeLayout(this).apply {
+                val padding = resources.getDimensionPixelSize(com.simplemobiletools.commons.R.dimen.activity_margin)
+                setPadding(padding, padding / 2, padding, padding / 2)
+                setBackgroundResource(com.simplemobiletools.commons.R.drawable.ripple_background)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            val labelView = com.simplemobiletools.commons.views.MyTextView(this).apply {
+                text = getString(R.string.sim_settings_title, sim.id, sim.label)
+                setTextAppearance(com.simplemobiletools.commons.R.style.SettingsTextLabelStyle)
+                id = android.view.View.generateViewId()
+            }
+            holder.addView(labelView, RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+            ))
+
+            val valueView = com.simplemobiletools.commons.views.MyTextView(this).apply {
+                val hasCustom = simSettings.greeting.isNotEmpty() || simSettings.language.isNotEmpty()
+                text = if (hasCustom) getString(R.string.sim_settings_configured) else getString(R.string.sim_settings_default)
+                setTextAppearance(com.simplemobiletools.commons.R.style.SettingsTextValueStyle)
+                val lp = RelativeLayout.LayoutParams(
+                    RelativeLayout.LayoutParams.MATCH_PARENT,
+                    RelativeLayout.LayoutParams.WRAP_CONTENT
+                )
+                lp.addRule(RelativeLayout.BELOW, labelView.id)
+                layoutParams = lp
+            }
+            holder.addView(valueView)
+
+            holder.setOnClickListener {
+                showPerSimDialog(sim.id, sim.label, valueView)
+            }
+
+            container.addView(holder)
+        }
+    }
+
+    private fun showPerSimDialog(simId: Int, simLabel: String, valueView: com.simplemobiletools.commons.views.MyTextView) {
+        val simIdStr = simId.toString()
+        val currentSettings = config.getSimSettings(simIdStr)
+
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 30, 40, 10)
+        }
+
+        // Language selector
+        val languageLabel = android.widget.TextView(this).apply {
+            text = getString(R.string.sim_language, simId)
+            setTextAppearance(android.R.style.TextAppearance_Material_Body1)
+            setPadding(0, 10, 0, 5)
+        }
+        layout.addView(languageLabel)
+
+        val languageButton = android.widget.Button(this).apply {
+            val langTag = currentSettings.language
+            text = if (langTag.isEmpty()) getString(R.string.tts_language_default) else Locale.forLanguageTag(langTag).displayName
+            isAllCaps = false
+        }
+        // Store the current language tag
+        languageButton.tag = currentSettings.language
+        languageButton.setOnClickListener {
+            showLanguagePickerForSim(languageButton)
+        }
+        layout.addView(languageButton)
+
+        // Greeting editor
+        val greetingLabel = android.widget.TextView(this).apply {
+            text = getString(R.string.sim_greeting, simId)
+            setTextAppearance(android.R.style.TextAppearance_Material_Body1)
+            setPadding(0, 20, 0, 5)
+        }
+        layout.addView(greetingLabel)
+
+        val greetingEdit = EditText(this).apply {
+            setText(currentSettings.greeting)
+            hint = getString(R.string.sim_greeting_hint)
+            minLines = 3
+        }
+        layout.addView(greetingEdit)
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.sim_settings_title, simId, simLabel))
+            .setView(layout)
+            .setPositiveButton(R.string.ok) { _, _ ->
+                val newSettings = SimAutoAnswerSettings(
+                    language = (languageButton.tag as? String) ?: "",
+                    greeting = greetingEdit.text.toString().trim()
+                )
+                config.setSimSettings(simIdStr, newSettings)
+                val hasCustom = newSettings.greeting.isNotEmpty() || newSettings.language.isNotEmpty()
+                valueView.text = if (hasCustom) getString(R.string.sim_settings_configured) else getString(R.string.sim_settings_default)
+            }
+            .setNeutralButton(R.string.call_recording_path_default) { _, _ ->
+                // Reset to defaults
+                config.setSimSettings(simIdStr, SimAutoAnswerSettings())
+                valueView.text = getString(R.string.sim_settings_default)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun showLanguagePickerForSim(button: android.widget.Button) {
+        val enginePkg = config.ttsEngine
+        val initListener = TextToSpeech.OnInitListener { status ->
+            if (status != TextToSpeech.SUCCESS) {
+                runOnUiThread { toast(R.string.tts_language_default) }
+            }
+        }
+
+        val tempTts = if (enginePkg.isNotEmpty()) {
+            TextToSpeech(this, initListener, enginePkg)
+        } else {
+            TextToSpeech(this, initListener)
+        }
+
+        android.os.Handler(mainLooper).postDelayed({
+            val locales = try {
+                tempTts.availableLanguages?.toList()?.sortedBy { it.displayName } ?: emptyList()
+            } catch (_: Exception) {
+                emptyList()
+            }
+
+            if (locales.isEmpty()) {
+                tempTts.shutdown()
+                toast(R.string.tts_language_default)
+                return@postDelayed
+            }
+
+            val items = arrayListOf(RadioItem(0, getString(R.string.tts_language_default)))
+            locales.forEachIndexed { index, locale ->
+                items.add(RadioItem(index + 1, locale.displayName))
+            }
+
+            val currentTag = (button.tag as? String) ?: ""
+            val selectedIndex = if (currentTag.isEmpty()) {
+                0
+            } else {
+                val idx = locales.indexOfFirst { it.toLanguageTag() == currentTag }
+                if (idx >= 0) idx + 1 else 0
+            }
+
+            RadioGroupDialog(this@SettingsActivity, items, selectedIndex) {
+                val selected = it as Int
+                val newTag = if (selected == 0) "" else locales[selected - 1].toLanguageTag()
+                button.tag = newTag
+                button.text = if (newTag.isEmpty()) getString(R.string.tts_language_default) else Locale.forLanguageTag(newTag).displayName
+            }
+
+            tempTts.shutdown()
+        }, 1000)
     }
 
     private fun setupSimulateCall() {

@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Wähltastenfeld-Nummern ausblenden</string>
     <string name="export_call_history">Anrufliste exportieren</string>
     <string name="import_call_history">Anrufliste importieren</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Nummer: %s</string>
+    <string name="call_summary_recorded">Aufgenommen: %s</string>
+    <string name="call_summary_channel_name">Anrufzusammenfassungen</string>
+    <string name="call_summary_channel_description">Benachrichtigungen mit Zusammenfassung nach jedem Anruf</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Benachrichtigungsaktionen nach Anrufende</string>
+    <string name="notif_action_play_recording">Aufnahme abspielen</string>
+    <string name="notif_action_share">Teilen…</string>
+    <string name="notif_action_share_recording">Aufnahme teilen</string>
+    <string name="notif_action_share_transcription">Transkription teilen</string>
+    <string name="notif_action_show_transcription">Transkription anzeigen</string>
+    <string name="share_recording">Aufnahme teilen</string>
+    <string name="recording_not_found">Aufnahme nicht gefunden</string>
+    <string name="no_app_to_play_recording">Keine App zum Abspielen der Aufnahme gefunden</string>
+    <string name="share_failed">Teilen fehlgeschlagen</string>
+    <string name="transcription_not_available">Transkription noch nicht verfügbar</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Mithören</string>
+    <string name="listen_in_mode">Automatisch angenommene Anrufe mithören</string>
+    <string name="listen_in_off">Aus</string>
+    <string name="listen_in_notification">Benachrichtigungsschaltfläche</string>
+    <string name="listen_in_auto">Automatisch (Lautsprecher an)</string>
+    <string name="stop_listening">Mithören beenden</string>
+    <string name="hang_up">Auflegen</string>
+    <string name="active_call_channel_name">Aktiver Anruf</string>
+    <string name="active_call_channel_description">Steuerung für automatisch angenommene Anrufe</string>
+    <string name="active_call_notification_title">Automatisch angenommen: %s</string>
+    <string name="listening_in">Lautsprecher an — Anruf wird mitgehört</string>
+    <string name="tap_listen_in">Tippe auf Mithören, um den Anruf zu hören</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Testen</string>
+    <string name="simulate_call">Eingehenden Anruf simulieren</string>
+    <string name="simulate_call_summary">Teste das Anruferlebnis mit einem simulierten Anruf</string>
+    <string name="simulated_call_banner">⚡ SIMULIERTER ANRUF</string>
+    <string name="simulated_call_caller">Testanrufer</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Klingelt…</string>
+    <string name="simulated_call_active">Anruf aktiv</string>
+    <string name="simulated_call_ended">Anruf beendet</string>
+    <string name="simulated_call_auto_answering">Automatische Annahme in %ds…</string>
+    <string name="answer">Annehmen</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Ich höre eingehende Anrufe, aber der Bildschirm schaltet sich nicht ein. Was kann ich tun\?</string>
     <string name="faq_1_text">Eine allgemeine Antwort auf die Frage ist schwer, denn solche Probleme können viele geräte- und systemspezifische Gründe haben. Du solltest dich in den Einstellungen des Geräts umsehen und sicherstellen, dass die App im Hintergrund angezeigt werden darf und die Einblendung über anderen Apps erlaubt ist.</string>

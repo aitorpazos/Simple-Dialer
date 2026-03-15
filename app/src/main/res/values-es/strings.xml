@@ -74,6 +74,95 @@
     <string name="hide_dialpad_numbers">Ocultar los números del teclado</string>
     <string name="export_call_history">Exportar el historial de llamadas</string>
     <string name="import_call_history">Importar el historial de llamadas</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Número: %s</string>
+    <string name="call_summary_recorded">Grabada: %s</string>
+    <string name="call_summary_channel_name">Resúmenes de llamadas</string>
+    <string name="call_summary_channel_description">Notificaciones con resumen tras cada llamada</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Acciones de notificación al finalizar llamada</string>
+    <string name="notif_action_play_recording">Reproducir grabación</string>
+    <string name="notif_action_share">Compartir…</string>
+    <string name="notif_action_share_recording">Compartir grabación</string>
+    <string name="notif_action_share_transcription">Compartir transcripción</string>
+    <string name="notif_action_show_transcription">Mostrar transcripción</string>
+    <string name="share_recording">Compartir grabación</string>
+    <string name="recording_not_found">Grabación no encontrada</string>
+    <string name="no_app_to_play_recording">No se encontró aplicación para reproducir la grabación</string>
+    <string name="share_failed">No se pudo compartir</string>
+    <string name="transcription_not_available">La transcripción aún no está disponible</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Escuchar</string>
+    <string name="listen_in_mode">Escuchar llamadas contestadas automáticamente</string>
+    <string name="listen_in_off">Desactivado</string>
+    <string name="listen_in_notification">Botón de notificación</string>
+    <string name="listen_in_auto">Automático (altavoz activado)</string>
+    <string name="stop_listening">Dejar de escuchar</string>
+    <string name="hang_up">Colgar</string>
+    <string name="active_call_channel_name">Llamada activa</string>
+    <string name="active_call_channel_description">Controles para llamadas contestadas automáticamente</string>
+    <string name="active_call_notification_title">Contestada automáticamente: %s</string>
+    <string name="listening_in">Altavoz activado — escuchando la llamada</string>
+    <string name="tap_listen_in">Pulsa Escuchar para oír la llamada</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Pruebas</string>
+    <string name="simulate_call">Simular llamada entrante</string>
+    <string name="simulate_call_summary">Prueba la experiencia del llamante con una llamada simulada</string>
+    <string name="simulated_call_banner">⚡ LLAMADA SIMULADA</string>
+    <string name="simulated_call_caller">Llamante de prueba</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Sonando…</string>
+    <string name="simulated_call_active">Llamada activa</string>
+    <string name="simulated_call_ended">Llamada finalizada</string>
+    <string name="simulated_call_auto_answering">Contestación automática en %ds…</string>
+    <string name="answer">Contestar</string>
+
+    <!-- Call Recording -->
+    <string name="call_recording">Grabación de llamadas</string>
+    <string name="enable_call_recording">Grabar todas las llamadas</string>
+    <string name="call_recording_started">Grabación iniciada</string>
+    <string name="call_recording_stopped">Grabación guardada</string>
+    <string name="call_recording_failed">Grabación fallida</string>
+    <string name="call_recording_path">Ruta de almacenamiento de grabaciones</string>
+    <string name="call_recording_path_default">Predeterminado (almacenamiento de la app)</string>
+    <string name="call_recording_path_change">Elegir otra carpeta</string>
+
+    <!-- Auto Answer -->
+    <string name="auto_answer">Respuesta automática</string>
+    <string name="auto_answer_mode">Responder automáticamente las llamadas entrantes</string>
+    <string name="auto_answer_none">Desactivado</string>
+    <string name="auto_answer_all">Todas las llamadas</string>
+    <string name="auto_answer_unknown">Solo llamantes desconocidos</string>
+    <string name="auto_answer_active">Respondiendo llamada automáticamente…</string>
+    <string name="auto_answer_greeting">Saludo de respuesta automática</string>
+    <string name="auto_answer_greeting_hint">Texto que se lee al llamante al responder automáticamente</string>
+    <string name="preview_greeting">🔊 Escuchar vista previa del saludo</string>
+    <string name="preview_greeting_playing">Reproduciendo saludo…</string>
+    <string name="greeting_empty">El texto del saludo está vacío</string>
+
+    <!-- Call Summary -->
+    <string name="call_summary_title">Llamada finalizada: %s</string>
+    <string name="call_summary_duration">Duración: %s</string>
+
+    <!-- TTS Settings -->
+    <string name="tts_engine">Motor TTS</string>
+    <string name="tts_engine_default">Predeterminado del sistema</string>
+    <string name="tts_language">Idioma TTS</string>
+    <string name="tts_language_default">Predeterminado del dispositivo</string>
+
+    <!-- Per-SIM Settings -->
+    <string name="per_sim_settings">Ajustes de respuesta automática por SIM</string>
+    <string name="per_sim_settings_summary">Configurar idioma y saludo por tarjeta SIM</string>
+    <string name="sim_greeting">Saludo para SIM %d</string>
+    <string name="sim_language">Idioma para SIM %d</string>
+    <string name="sim_greeting_hint">Saludo personalizado para esta SIM (dejar vacío para usar el global)</string>
+    <string name="sim_settings_title">SIM %d — %s</string>
+    <string name="sim_settings_configured">Configurado</string>
+    <string name="sim_settings_default">Usando ajustes globales</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Escucho las llamadas entrantes, pero la pantalla no se enciende. ¿Qué puedo hacer\?</string>
     <string name="faq_1_text">Estos problemas pueden deberse a muchas razones específicas del dispositivo y del sistema, es difícil decirlo en general. Deberías mirar en la configuración de tu dispositivo y asegurarte de que la aplicación tiene permiso para aparecer cuando está en segundo plano y permitir la aplicación se muestre sobre otras aplicaciones.</string>

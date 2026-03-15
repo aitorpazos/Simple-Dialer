@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Tuş takımı numaralarını gizle</string>
     <string name="export_call_history">Arama geçmişini dışa aktar</string>
     <string name="import_call_history">Arama geçmişini içe aktar</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Numara: %s</string>
+    <string name="call_summary_recorded">Kaydedildi: %s</string>
+    <string name="call_summary_channel_name">Arama özetleri</string>
+    <string name="call_summary_channel_description">Her aramadan sonra özet bildirimleri</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Arama sonu bildirim eylemleri</string>
+    <string name="notif_action_play_recording">Kaydı oynat</string>
+    <string name="notif_action_share">Paylaş…</string>
+    <string name="notif_action_share_recording">Kaydı paylaş</string>
+    <string name="notif_action_share_transcription">Dökümü paylaş</string>
+    <string name="notif_action_show_transcription">Dökümü göster</string>
+    <string name="share_recording">Kaydı paylaş</string>
+    <string name="recording_not_found">Kayıt bulunamadı</string>
+    <string name="no_app_to_play_recording">Kaydı oynatacak uygulama bulunamadı</string>
+    <string name="share_failed">Paylaşılamadı</string>
+    <string name="transcription_not_available">Döküm henüz hazır değil</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Dinle</string>
+    <string name="listen_in_mode">Otomatik yanıtlanan aramaları dinle</string>
+    <string name="listen_in_off">Kapalı</string>
+    <string name="listen_in_notification">Bildirim düğmesi</string>
+    <string name="listen_in_auto">Otomatik (hoparlör açık)</string>
+    <string name="stop_listening">Dinlemeyi durdur</string>
+    <string name="hang_up">Kapat</string>
+    <string name="active_call_channel_name">Aktif arama</string>
+    <string name="active_call_channel_description">Otomatik yanıtlanan aramalar için kontroller</string>
+    <string name="active_call_notification_title">Otomatik yanıtlandı: %s</string>
+    <string name="listening_in">Hoparlör açık — arama dinleniyor</string>
+    <string name="tap_listen_in">Aramayı duymak için Dinle\'ye dokunun</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Test</string>
+    <string name="simulate_call">Gelen aramayı simüle et</string>
+    <string name="simulate_call_summary">Simüle edilmiş bir aramayla arayan deneyimini test edin</string>
+    <string name="simulated_call_banner">⚡ SİMÜLE ARAMA</string>
+    <string name="simulated_call_caller">Test arayan</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Çalıyor…</string>
+    <string name="simulated_call_active">Arama aktif</string>
+    <string name="simulated_call_ended">Arama sona erdi</string>
+    <string name="simulated_call_auto_answering">%d sn sonra otomatik yanıt…</string>
+    <string name="answer">Yanıtla</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Gelen aramaları duyuyorum ama ekran açılmıyor. Ne yapabilirim\?</string>
     <string name="faq_1_text">Bu tür sorunların aygıta ve sisteme özgü birçok nedeni olabilir, genel olarak söylemek zor. Aygıt ayarlarınıza bakmalı ve uygulamanın arka plandayken açılmasına ve diğer uygulamaların üzerinde görüntülenmesine izin verildiğinden emin olmalısınız.</string>

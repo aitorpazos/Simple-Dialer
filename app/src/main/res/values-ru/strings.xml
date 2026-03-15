@@ -75,6 +75,52 @@
     <string name="export_call_history">Экспорт истории звонков</string>
     <string name="import_call_history">Импорт истории звонков</string>
 
+    <!-- Call Summary -->
+    <string name="call_summary_number">Номер: %s</string>
+    <string name="call_summary_recorded">Записано: %s</string>
+    <string name="call_summary_channel_name">Сводки звонков</string>
+    <string name="call_summary_channel_description">Уведомления со сводкой после каждого звонка</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Действия уведомления после звонка</string>
+    <string name="notif_action_play_recording">Воспроизвести запись</string>
+    <string name="notif_action_share">Поделиться…</string>
+    <string name="notif_action_share_recording">Поделиться записью</string>
+    <string name="notif_action_share_transcription">Поделиться транскрипцией</string>
+    <string name="notif_action_show_transcription">Показать транскрипцию</string>
+    <string name="share_recording">Поделиться записью</string>
+    <string name="recording_not_found">Запись не найдена</string>
+    <string name="no_app_to_play_recording">Не найдено приложение для воспроизведения записи</string>
+    <string name="share_failed">Не удалось поделиться</string>
+    <string name="transcription_not_available">Транскрипция ещё не доступна</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Прослушать</string>
+    <string name="listen_in_mode">Прослушивание автоответных звонков</string>
+    <string name="listen_in_off">Выкл</string>
+    <string name="listen_in_notification">Кнопка уведомления</string>
+    <string name="listen_in_auto">Авто (динамик включён)</string>
+    <string name="stop_listening">Прекратить прослушивание</string>
+    <string name="hang_up">Завершить</string>
+    <string name="active_call_channel_name">Активный звонок</string>
+    <string name="active_call_channel_description">Управление автоответными звонками</string>
+    <string name="active_call_notification_title">Автоответ: %s</string>
+    <string name="listening_in">Динамик включён — прослушивание звонка</string>
+    <string name="tap_listen_in">Нажмите Прослушать, чтобы услышать звонок</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Тестирование</string>
+    <string name="simulate_call">Симулировать входящий звонок</string>
+    <string name="simulate_call_summary">Проверьте опыт звонящего с помощью симулированного звонка</string>
+    <string name="simulated_call_banner">⚡ СИМУЛЯЦИЯ ЗВОНКА</string>
+    <string name="simulated_call_caller">Тестовый абонент</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Звонок…</string>
+    <string name="simulated_call_active">Звонок активен</string>
+    <string name="simulated_call_ended">Звонок завершён</string>
+    <string name="simulated_call_auto_answering">Автоответ через %dс…</string>
+    <string name="answer">Ответить</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Я слышу сигналы входящих вызовов, но экран не включается. Что можно сделать\?</string>
     <string name="faq_1_text">Такие проблемы могут иметь множество специфических для устройства и системы причин, о которых трудно говорить в общем. Следует проверить настройки устройства и убедиться, что приложению разрешено отображение всплывающих уведомлений в фоновом режиме и отображение поверх других приложений.</string>

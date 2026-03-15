@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Приховати номери цифрової клавіатури</string>
     <string name="export_call_history">Експорт журналу дзвінків</string>
     <string name="import_call_history">Імпорт історії дзвінків</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Номер: %s</string>
+    <string name="call_summary_recorded">Записано: %s</string>
+    <string name="call_summary_channel_name">Підсумки дзвінків</string>
+    <string name="call_summary_channel_description">Сповіщення з підсумком після кожного дзвінка</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Дії сповіщення після дзвінка</string>
+    <string name="notif_action_play_recording">Відтворити запис</string>
+    <string name="notif_action_share">Поділитися…</string>
+    <string name="notif_action_share_recording">Поділитися записом</string>
+    <string name="notif_action_share_transcription">Поділитися транскрипцією</string>
+    <string name="notif_action_show_transcription">Показати транскрипцію</string>
+    <string name="share_recording">Поділитися записом</string>
+    <string name="recording_not_found">Запис не знайдено</string>
+    <string name="no_app_to_play_recording">Не знайдено додаток для відтворення запису</string>
+    <string name="share_failed">Не вдалося поділитися</string>
+    <string name="transcription_not_available">Транскрипція ще недоступна</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Прослухати</string>
+    <string name="listen_in_mode">Прослуховування автовідповідних дзвінків</string>
+    <string name="listen_in_off">Вимк</string>
+    <string name="listen_in_notification">Кнопка сповіщення</string>
+    <string name="listen_in_auto">Авто (динамік увімкнено)</string>
+    <string name="stop_listening">Припинити прослуховування</string>
+    <string name="hang_up">Завершити</string>
+    <string name="active_call_channel_name">Активний дзвінок</string>
+    <string name="active_call_channel_description">Керування автовідповідними дзвінками</string>
+    <string name="active_call_notification_title">Автовідповідь: %s</string>
+    <string name="listening_in">Динамік увімкнено — прослуховування дзвінка</string>
+    <string name="tap_listen_in">Натисніть Прослухати, щоб почути дзвінок</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Тестування</string>
+    <string name="simulate_call">Симулювати вхідний дзвінок</string>
+    <string name="simulate_call_summary">Перевірте досвід абонента за допомогою симульованого дзвінка</string>
+    <string name="simulated_call_banner">⚡ СИМУЛЯЦІЯ ДЗВІНКА</string>
+    <string name="simulated_call_caller">Тестовий абонент</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Дзвонить…</string>
+    <string name="simulated_call_active">Дзвінок активний</string>
+    <string name="simulated_call_ended">Дзвінок завершено</string>
+    <string name="simulated_call_auto_answering">Автовідповідь через %dс…</string>
+    <string name="answer">Відповісти</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Я чую вхідні дзвінки, але екран не вмикається. Що я можу зробити\?</string>
     <string name="faq_1_text">Такі проблеми можуть мати багато специфічних для пристрою та системи причин, важко сказати в цілому. Вам слід подивитися в налаштуваннях свого пристрою та переконатися, що застосунку дозволено відображати у фоновому режимі та дозволяти відображення над іншими застосунками.</string>

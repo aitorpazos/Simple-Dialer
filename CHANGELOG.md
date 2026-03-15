@@ -1,6 +1,14 @@
 Changelog
 ==========
 
+Version 5.23.0 *(2025-03-15)*
+----------------------------
+
+ * Added TTS engine selection for auto-answer greeting
+ * Added TTS language selection for auto-answer greeting
+ * Added per-SIM card auto-answer settings (language and greeting)
+ * Added translations for new UI features across all 44 languages
+
 Version 5.18.1 *(2023-09-19)*
 ----------------------------
 

@@ -75,6 +75,52 @@
     <string name="export_call_history">Εξαγωγή ιστορικού κλήσεων</string>
     <string name="import_call_history">Εισαγωγή ιστορικού κλήσεων</string>
 
+    <!-- Call Summary -->
+    <string name="call_summary_number">Αριθμός: %s</string>
+    <string name="call_summary_recorded">Ηχογραφήθηκε: %s</string>
+    <string name="call_summary_channel_name">Περιλήψεις κλήσεων</string>
+    <string name="call_summary_channel_description">Ειδοποιήσεις με περίληψη μετά από κάθε κλήση</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Ενέργειες ειδοποίησης τέλους κλήσης</string>
+    <string name="notif_action_play_recording">Αναπαραγωγή ηχογράφησης</string>
+    <string name="notif_action_share">Κοινοποίηση…</string>
+    <string name="notif_action_share_recording">Κοινοποίηση ηχογράφησης</string>
+    <string name="notif_action_share_transcription">Κοινοποίηση μεταγραφής</string>
+    <string name="notif_action_show_transcription">Εμφάνιση μεταγραφής</string>
+    <string name="share_recording">Κοινοποίηση ηχογράφησης</string>
+    <string name="recording_not_found">Η ηχογράφηση δεν βρέθηκε</string>
+    <string name="no_app_to_play_recording">Δεν βρέθηκε εφαρμογή για αναπαραγωγή της ηχογράφησης</string>
+    <string name="share_failed">Αποτυχία κοινοποίησης</string>
+    <string name="transcription_not_available">Η μεταγραφή δεν είναι ακόμα διαθέσιμη</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Ακρόαση</string>
+    <string name="listen_in_mode">Ακρόαση αυτόματα απαντημένων κλήσεων</string>
+    <string name="listen_in_off">Απενεργοποίηση</string>
+    <string name="listen_in_notification">Κουμπί ειδοποίησης</string>
+    <string name="listen_in_auto">Αυτόματα (ηχείο ενεργό)</string>
+    <string name="stop_listening">Διακοπή ακρόασης</string>
+    <string name="hang_up">Κλείσιμο</string>
+    <string name="active_call_channel_name">Ενεργή κλήση</string>
+    <string name="active_call_channel_description">Χειριστήρια για αυτόματα απαντημένες κλήσεις</string>
+    <string name="active_call_notification_title">Αυτόματη απάντηση: %s</string>
+    <string name="listening_in">Ηχείο ενεργό — ακρόαση κλήσης</string>
+    <string name="tap_listen_in">Πατήστε Ακρόαση για να ακούσετε την κλήση</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Δοκιμή</string>
+    <string name="simulate_call">Προσομοίωση εισερχόμενης κλήσης</string>
+    <string name="simulate_call_summary">Δοκιμάστε την εμπειρία καλούντος με μια προσομοιωμένη κλήση</string>
+    <string name="simulated_call_banner">⚡ ΠΡΟΣΟΜΟΙΩΜΕΝΗ ΚΛΗΣΗ</string>
+    <string name="simulated_call_caller">Δοκιμαστικός καλών</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Κουδουνίζει…</string>
+    <string name="simulated_call_active">Κλήση ενεργή</string>
+    <string name="simulated_call_ended">Η κλήση τερματίστηκε</string>
+    <string name="simulated_call_auto_answering">Αυτόματη απάντηση σε %d δευτ…</string>
+    <string name="answer">Απάντηση</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Ακούω εισερχόμενες κλήσεις, αλλά η οθόνη δεν ανάβει. Τι μπορώ να κάνω;</string>
     <string name="faq_1_text">Τέτοια θέματα μπορεί να έχουν πολλούς λόγους που σχετίζονται με τη συσκευή και το σύστημα, και είναι δύσκολο να ειπωθούν γενικά. Θα πρέπει να ψάξετε στις ρυθμίσεις της συσκευής σας και να βεβαιωθείτε ότι η εφαρμογή επιτρέπεται να εμφανίζεται όταν βρίσκεται στο παρασκήνιο και να επιτρέπει την εμφάνισή της πάνω από άλλες εφαρμογές.</string>

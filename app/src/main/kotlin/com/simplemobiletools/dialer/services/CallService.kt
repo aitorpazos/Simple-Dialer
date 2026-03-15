@@ -17,6 +17,7 @@ import androidx.core.app.NotificationCompat
 import com.simplemobiletools.dialer.R
 import com.simplemobiletools.dialer.activities.CallActivity
 import com.simplemobiletools.dialer.extensions.config
+import com.simplemobiletools.dialer.extensions.getAvailableSIMCardLabels
 import com.simplemobiletools.dialer.extensions.getCallDuration
 import com.simplemobiletools.dialer.extensions.getStateCompat
 import com.simplemobiletools.dialer.extensions.isOutgoing
@@ -38,6 +39,7 @@ class CallService : InCallService() {
     private var callStartTimeMs = 0L
     private var wasAutoAnswered = false
     private var isListeningIn = false
+    private var currentSimId: String = ""
 
     private val callListener = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
@@ -129,6 +131,19 @@ class CallService : InCallService() {
                 ""
             }
 
+            // Detect which SIM received this call
+            currentSimId = ""
+            try {
+                val callAccountHandle = call.details?.accountHandle
+                if (callAccountHandle != null) {
+                    val simAccounts = getAvailableSIMCardLabels()
+                    val matchedSim = simAccounts.firstOrNull { it.handle == callAccountHandle }
+                    if (matchedSim != null) {
+                        currentSimId = matchedSim.id.toString()
+                    }
+                }
+            } catch (_: Exception) {}
+
             // Get contact name asynchronously
             getCallContact(this, call) { contact ->
                 currentCallName = contact.name
@@ -174,11 +189,23 @@ class CallService : InCallService() {
 
         // Play greeting if this was an auto-answered call
         if (wasAutoAnswered) {
-            val greeting = config.autoAnswerGreeting
-            if (greeting.isNotEmpty()) {
+            // Resolve per-SIM overrides
+            val simSettings = if (currentSimId.isNotEmpty()) {
+                config.getSimSettings(currentSimId)
+            } else {
+                null
+            }
+            val greetingText = simSettings?.greeting?.takeIf { it.isNotEmpty() } ?: config.autoAnswerGreeting
+            val languageTag = simSettings?.language?.takeIf { it.isNotEmpty() } ?: config.ttsLanguage
+
+            if (greetingText.isNotEmpty()) {
                 // Small delay to let audio route stabilise after answer
                 handler.postDelayed({
-                    greetingManager.playGreetingForCall()
+                    greetingManager.playGreetingForCall(
+                        greeting = greetingText,
+                        languageTag = languageTag,
+                        engine = config.ttsEngine
+                    )
                 }, 500)
             }
 
@@ -249,6 +276,7 @@ class CallService : InCallService() {
         currentRecordingResult = null
         wasAutoAnswered = false
         isListeningIn = false
+        currentSimId = ""
     }
 
     // ---- Listen-in notification ----

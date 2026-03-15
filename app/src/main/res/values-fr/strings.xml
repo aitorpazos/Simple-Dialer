@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Masquer les numéros du pavé numérique</string>
     <string name="export_call_history">Exporter l\'historique d\'appels</string>
     <string name="import_call_history">Importer l\'historique d\'appels</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Numéro : %s</string>
+    <string name="call_summary_recorded">Enregistré : %s</string>
+    <string name="call_summary_channel_name">Résumés d\'appels</string>
+    <string name="call_summary_channel_description">Notifications avec résumé après chaque appel</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Actions de notification en fin d\'appel</string>
+    <string name="notif_action_play_recording">Lire l\'enregistrement</string>
+    <string name="notif_action_share">Partager…</string>
+    <string name="notif_action_share_recording">Partager l\'enregistrement</string>
+    <string name="notif_action_share_transcription">Partager la transcription</string>
+    <string name="notif_action_show_transcription">Afficher la transcription</string>
+    <string name="share_recording">Partager l\'enregistrement</string>
+    <string name="recording_not_found">Enregistrement introuvable</string>
+    <string name="no_app_to_play_recording">Aucune application trouvée pour lire l\'enregistrement</string>
+    <string name="share_failed">Impossible de partager</string>
+    <string name="transcription_not_available">La transcription n\'est pas encore disponible</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Écouter</string>
+    <string name="listen_in_mode">Écouter les appels répondus automatiquement</string>
+    <string name="listen_in_off">Désactivé</string>
+    <string name="listen_in_notification">Bouton de notification</string>
+    <string name="listen_in_auto">Automatique (haut-parleur activé)</string>
+    <string name="stop_listening">Arrêter d\'écouter</string>
+    <string name="hang_up">Raccrocher</string>
+    <string name="active_call_channel_name">Appel actif</string>
+    <string name="active_call_channel_description">Commandes pour les appels répondus automatiquement</string>
+    <string name="active_call_notification_title">Répondu automatiquement : %s</string>
+    <string name="listening_in">Haut-parleur activé — écoute de l\'appel</string>
+    <string name="tap_listen_in">Appuyez sur Écouter pour entendre l\'appel</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Tests</string>
+    <string name="simulate_call">Simuler un appel entrant</string>
+    <string name="simulate_call_summary">Testez l\'expérience de l\'appelant avec un appel simulé</string>
+    <string name="simulated_call_banner">⚡ APPEL SIMULÉ</string>
+    <string name="simulated_call_caller">Appelant test</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Sonnerie…</string>
+    <string name="simulated_call_active">Appel actif</string>
+    <string name="simulated_call_ended">Appel terminé</string>
+    <string name="simulated_call_auto_answering">Réponse automatique dans %ds…</string>
+    <string name="answer">Répondre</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">J\'entends les appels entrants, mais l\'écran ne s\'allume pas. Que puis-je faire \?</string>
     <string name="faq_1_text">Ces problèmes peuvent avoir de nombreuses raisons spécifiques à l\'appareil et au système, il est difficile d\'en parler en général. Vous devriez consulter les paramètres de votre appareil et vous assurer que l\'application est autorisée à apparaître en arrière-plan et à s\'afficher au-dessus des autres applications.</string>

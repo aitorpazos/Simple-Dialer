@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Peida numbriklahvistik</string>
     <string name="export_call_history">Ekspordi kõnede ajalugu</string>
     <string name="import_call_history">Impordi kõnede ajalugu</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Number: %s</string>
+    <string name="call_summary_recorded">Salvestatud: %s</string>
+    <string name="call_summary_channel_name">Kõnede kokkuvõtted</string>
+    <string name="call_summary_channel_description">Teavitused kokkuvõttega pärast iga kõnet</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Kõne lõpu teavituse toimingud</string>
+    <string name="notif_action_play_recording">Esita salvestis</string>
+    <string name="notif_action_share">Jaga…</string>
+    <string name="notif_action_share_recording">Jaga salvestist</string>
+    <string name="notif_action_share_transcription">Jaga transkriptsiooni</string>
+    <string name="notif_action_show_transcription">Näita transkriptsiooni</string>
+    <string name="share_recording">Jaga salvestist</string>
+    <string name="recording_not_found">Salvestist ei leitud</string>
+    <string name="no_app_to_play_recording">Salvestise esitamiseks ei leitud rakendust</string>
+    <string name="share_failed">Jagamine ebaõnnestus</string>
+    <string name="transcription_not_available">Transkriptsioon pole veel saadaval</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Kuula</string>
+    <string name="listen_in_mode">Kuula automaatselt vastatud kõnesid</string>
+    <string name="listen_in_off">Väljas</string>
+    <string name="listen_in_notification">Teavitusnupp</string>
+    <string name="listen_in_auto">Automaatne (kõlar sees)</string>
+    <string name="stop_listening">Lõpeta kuulamine</string>
+    <string name="hang_up">Katkesta kõne</string>
+    <string name="active_call_channel_name">Aktiivne kõne</string>
+    <string name="active_call_channel_description">Automaatselt vastatud kõnede juhtimine</string>
+    <string name="active_call_notification_title">Automaatselt vastatud: %s</string>
+    <string name="listening_in">Kõlar sees — kõne kuulamine</string>
+    <string name="tap_listen_in">Puudutage Kuula, et kõnet kuulda</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Testimine</string>
+    <string name="simulate_call">Simuleeri sissetulevat kõnet</string>
+    <string name="simulate_call_summary">Testige helistaja kogemust simuleeritud kõnega</string>
+    <string name="simulated_call_banner">⚡ SIMULEERITUD KÕNE</string>
+    <string name="simulated_call_caller">Testhelistaja</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Heliseb…</string>
+    <string name="simulated_call_active">Kõne aktiivne</string>
+    <string name="simulated_call_ended">Kõne lõppes</string>
+    <string name="simulated_call_auto_answering">Automaatne vastamine %d s pärast…</string>
+    <string name="answer">Vasta</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Ma kuulen sissetulevaid kõnesid, kuid ekraan ei lülitu sisse. Mida ma saan teha\?</string>
     <string name="faq_1_text">Üldist vastust pole, sellistel probleemidel võib olla palju seadme- ja süsteemispetsiifilisi põhjusi. Peaksid oma nutiseadme seadistustes ringi vaatama ja veenduma, et rakendusel on lubatud taustalt aknaid avada ja lubada kuvamist rakenduste peal.</string>

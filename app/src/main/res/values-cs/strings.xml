@@ -74,6 +74,52 @@
     <string name="hide_dialpad_numbers">Skrýt čísla číselníku</string>
     <string name="export_call_history">Exportovat historii volání</string>
     <string name="import_call_history">Importovat historii volání</string>
+    <!-- Call Summary -->
+    <string name="call_summary_number">Číslo: %s</string>
+    <string name="call_summary_recorded">Nahráno: %s</string>
+    <string name="call_summary_channel_name">Shrnutí hovorů</string>
+    <string name="call_summary_channel_description">Oznámení se shrnutím po každém hovoru</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Akce oznámení po ukončení hovoru</string>
+    <string name="notif_action_play_recording">Přehrát nahrávku</string>
+    <string name="notif_action_share">Sdílet…</string>
+    <string name="notif_action_share_recording">Sdílet nahrávku</string>
+    <string name="notif_action_share_transcription">Sdílet přepis</string>
+    <string name="notif_action_show_transcription">Zobrazit přepis</string>
+    <string name="share_recording">Sdílet nahrávku</string>
+    <string name="recording_not_found">Nahrávka nenalezena</string>
+    <string name="no_app_to_play_recording">Nebyla nalezena aplikace pro přehrání nahrávky</string>
+    <string name="share_failed">Sdílení se nezdařilo</string>
+    <string name="transcription_not_available">Přepis zatím není k dispozici</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Poslechnout</string>
+    <string name="listen_in_mode">Poslech automaticky přijatých hovorů</string>
+    <string name="listen_in_off">Vypnuto</string>
+    <string name="listen_in_notification">Tlačítko v oznámení</string>
+    <string name="listen_in_auto">Automaticky (reproduktor zapnutý)</string>
+    <string name="stop_listening">Zastavit poslech</string>
+    <string name="hang_up">Zavěsit</string>
+    <string name="active_call_channel_name">Aktivní hovor</string>
+    <string name="active_call_channel_description">Ovládání automaticky přijatých hovorů</string>
+    <string name="active_call_notification_title">Automaticky přijato: %s</string>
+    <string name="listening_in">Reproduktor zapnutý — poslech hovoru</string>
+    <string name="tap_listen_in">Klepněte na Poslechnout pro poslech hovoru</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Testování</string>
+    <string name="simulate_call">Simulovat příchozí hovor</string>
+    <string name="simulate_call_summary">Vyzkoušejte zážitek volajícího se simulovaným hovorem</string>
+    <string name="simulated_call_banner">⚡ SIMULOVANÝ HOVOR</string>
+    <string name="simulated_call_caller">Testovací volající</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Vyzvání…</string>
+    <string name="simulated_call_active">Hovor aktivní</string>
+    <string name="simulated_call_ended">Hovor ukončen</string>
+    <string name="simulated_call_auto_answering">Automatické přijetí za %d s…</string>
+    <string name="answer">Přijmout</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">Slyším příchozí hovor, ale obrazovka se nezapne. Co mohu dělat\?</string>
     <string name="faq_1_text">Takové problémy mohou mít mnoho důvodů specifických pro zařízení a systém, takže je těžké říci něco obecně. Měli byste zkontrolovat nastavení zařízení a ujistit se, že se aplikace může otevřít, když běží na pozadí, a umožnit zobrazení přes jiné aplikace.</string>

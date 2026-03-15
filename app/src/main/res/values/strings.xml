@@ -143,6 +143,22 @@
     <string name="listening_in">Speaker on — listening to call</string>
     <string name="tap_listen_in">Tap Listen In to hear the call</string>
 
+    <!-- TTS Settings -->
+    <string name="tts_engine">TTS engine</string>
+    <string name="tts_engine_default">System default</string>
+    <string name="tts_language">TTS language</string>
+    <string name="tts_language_default">Device default</string>
+
+    <!-- Per-SIM Settings -->
+    <string name="per_sim_settings">Per-SIM auto-answer settings</string>
+    <string name="per_sim_settings_summary">Configure language and greeting per SIM card</string>
+    <string name="sim_greeting">Greeting for SIM %d</string>
+    <string name="sim_language">Language for SIM %d</string>
+    <string name="sim_greeting_hint">Custom greeting for this SIM (leave empty for global)</string>
+    <string name="sim_settings_title">SIM %d — %s</string>
+    <string name="sim_settings_configured">Configured</string>
+    <string name="sim_settings_default">Using global defaults</string>
+
     <!-- Simulate Call -->
     <string name="testing">Testing</string>
     <string name="simulate_call">Simulate incoming call</string>

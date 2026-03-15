@@ -75,6 +75,52 @@
     <string name="export_call_history">Export call history</string>
     <string name="import_call_history">Import call history</string>
 
+    <!-- Call Summary -->
+    <string name="call_summary_number">Nummer: %s</string>
+    <string name="call_summary_recorded">Optaget: %s</string>
+    <string name="call_summary_channel_name">Opkaldsresuméer</string>
+    <string name="call_summary_channel_description">Notifikationer med resumé efter hvert opkald</string>
+
+    <!-- Notification Actions -->
+    <string name="notification_actions_label">Notifikationshandlinger ved opkaldsafslutning</string>
+    <string name="notif_action_play_recording">Afspil optagelse</string>
+    <string name="notif_action_share">Del…</string>
+    <string name="notif_action_share_recording">Del optagelse</string>
+    <string name="notif_action_share_transcription">Del transskription</string>
+    <string name="notif_action_show_transcription">Vis transskription</string>
+    <string name="share_recording">Del optagelse</string>
+    <string name="recording_not_found">Optagelse ikke fundet</string>
+    <string name="no_app_to_play_recording">Ingen app fundet til afspilning af optagelse</string>
+    <string name="share_failed">Kunne ikke dele</string>
+    <string name="transcription_not_available">Transskription er endnu ikke tilgængelig</string>
+
+    <!-- Listen In -->
+    <string name="listen_in">Lyt med</string>
+    <string name="listen_in_mode">Lyt med på automatisk besvarede opkald</string>
+    <string name="listen_in_off">Fra</string>
+    <string name="listen_in_notification">Notifikationsknap</string>
+    <string name="listen_in_auto">Automatisk (højttaler tændt)</string>
+    <string name="stop_listening">Stop lytning</string>
+    <string name="hang_up">Læg på</string>
+    <string name="active_call_channel_name">Aktivt opkald</string>
+    <string name="active_call_channel_description">Kontroller til automatisk besvarede opkald</string>
+    <string name="active_call_notification_title">Automatisk besvaret: %s</string>
+    <string name="listening_in">Højttaler tændt — lytter til opkald</string>
+    <string name="tap_listen_in">Tryk på Lyt med for at høre opkaldet</string>
+
+    <!-- Simulate Call -->
+    <string name="testing">Test</string>
+    <string name="simulate_call">Simuler indgående opkald</string>
+    <string name="simulate_call_summary">Test opkaldsoplevelsen med et simuleret opkald</string>
+    <string name="simulated_call_banner">⚡ SIMULERET OPKALD</string>
+    <string name="simulated_call_caller">Testopkalder</string>
+    <string name="simulated_call_number">+1 555-0100</string>
+    <string name="simulated_call_ringing">Ringer…</string>
+    <string name="simulated_call_active">Opkald aktivt</string>
+    <string name="simulated_call_ended">Opkald afsluttet</string>
+    <string name="simulated_call_auto_answering">Automatisk besvarelse om %d sek…</string>
+    <string name="answer">Besvar</string>
+
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>
     <string name="faq_1_text">Such issues can have many device and system specific reasons, hard to say in general. You should look around in your device settings and make sure that the app is allowed to pop up when in background and allow displaying over other apps.</string>
