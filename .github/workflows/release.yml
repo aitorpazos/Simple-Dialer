@@ -62,10 +62,7 @@ jobs:
             - 🧪 **Simulate Call** — Test the full caller experience from Settings
 
             ### Changes in this release
-            - 🔔 **Configurable notification actions** — Choose which buttons appear on post-call notifications (Play, Share, Share Recording, Share Transcription, Show Transcription)
-            - 🔈 **Listen-in on auto-answered calls** — Speaker toggle notification when calls are auto-answered (off / notification button / auto speaker)
-            - 🧪 **Simulate incoming call** — Test the complete caller experience from Settings
-            - ✅ **Unit tests** — Auto-answer logic, notification action filtering, listen-in mode, constants integrity
+            - 🔧 **Fix TTS engine discovery** — All installed TTS engines now appear in the selector (previously some engines like Google TTS or Piper were missing)
 
             ### Install
             Download the **release APK** (signed, minified).

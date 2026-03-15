@@ -1,6 +1,8 @@
 package com.simplemobiletools.dialer.helpers
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -143,15 +145,30 @@ class GreetingManager(private val context: Context) {
 
     /**
      * Get the list of available TTS engines on the device.
+     * Queries PackageManager for services that handle the TTS engine intent,
+     * which is more reliable than TextToSpeech.getEngines() on some devices
+     * where the standard query may miss engines that don't declare CATEGORY_DEFAULT.
      */
     fun getAvailableEngines(): List<TextToSpeech.EngineInfo> {
-        // Need a temporary TTS to query engines if none initialised
-        val tempTts = tts ?: TextToSpeech(context) {}
-        val engines = tempTts.engines ?: emptyList()
-        if (tts == null) {
-            tempTts.shutdown()
-        }
-        return engines
+        // If we already have an initialised TTS instance, use its engine list
+        tts?.engines?.let { if (it.isNotEmpty()) return it }
+
+        // Otherwise query PackageManager directly for TTS engine services.
+        // This is synchronous and reliable, unlike creating a temporary
+        // TextToSpeech instance which may not be fully bound yet.
+        val pm = context.packageManager
+        val serviceIntent = Intent("android.intent.action.TTS_SERVICE")
+        return pm.queryIntentServices(serviceIntent, 0).mapNotNull { ri ->
+            try {
+                val info = TextToSpeech.EngineInfo()
+                info.name = ri.serviceInfo.packageName
+                val appInfo = pm.getApplicationInfo(ri.serviceInfo.packageName, 0)
+                info.label = pm.getApplicationLabel(appInfo).toString()
+                info
+            } catch (_: Exception) {
+                null
+            }
+        }.distinctBy { it.name }
     }
 
     /**
