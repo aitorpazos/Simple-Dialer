@@ -4,29 +4,34 @@ import android.content.Context
 import android.media.AudioManager
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.util.Log
 import com.simplemobiletools.dialer.extensions.config
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
+
+private const val TAG = "GreetingManager"
 
 /**
  * Manages TTS-based greeting playback for auto-answered calls.
  *
  * Each speak request creates a **fresh** TTS instance bound to the requested
- * engine and language.  This avoids every race-condition and state-leak that
- * comes from reusing a long-lived TTS object across different engine/language
- * combinations:
+ * engine and language, identified by a monotonically increasing generation
+ * counter.  This avoids every race-condition that comes from:
  *
- *  - Android TTS engines may silently reset their language after a speak()
- *    finishes or when the underlying service reconnects.
- *  - Switching language on an existing instance is unreliable on several OEM
- *    TTS implementations.
- *  - Creating a new instance is cheap (~50-100 ms) and guarantees a clean
- *    state every time.
+ *  - Android TTS engines silently resetting their language after speak()
+ *  - Switching language on an existing instance being unreliable
+ *  - Rapid successive requests (e.g. tapping "preview" twice) causing the
+ *    OnInitListener of a stale instance to fire on the wrong TTS object
  *
- * The previous instance is always shut down before the new one is created.
+ * The generation counter ensures that only the *latest* request's init
+ * callback ever proceeds to speak.  Any older callback is a no-op.
  */
 class GreetingManager(private val context: Context) {
     private var tts: TextToSpeech? = null
     private var onDoneCallback: (() -> Unit)? = null
+
+    /** Monotonically increasing counter — each speakInternal() call bumps it. */
+    private val generation = AtomicInteger(0)
 
     /**
      * Play the configured greeting through VOICE_COMMUNICATION stream
@@ -89,13 +94,33 @@ class GreetingManager(private val context: Context) {
         val desiredEngine = engine.ifEmpty { context.config.ttsEngine }
         val desiredLang = languageTag.ifEmpty { context.config.ttsLanguage }
 
+        // Bump generation — any older init callback becomes a no-op
+        val myGeneration = generation.incrementAndGet()
+
+        Log.d(TAG, "speakInternal gen=$myGeneration engine='$desiredEngine' lang='$desiredLang' stream=$stream")
+
         // Tear down any previous instance completely
         destroyTts()
 
         onDoneCallback = onDone
 
+        // Capture desired params so the callback closure is self-contained
+        // and does not depend on any mutable field except the generation check.
+        val desiredLocale = if (desiredLang.isNotEmpty()) {
+            Locale.forLanguageTag(desiredLang)
+        } else {
+            Locale.getDefault()
+        }
+
         val initListener = TextToSpeech.OnInitListener { status ->
+            // If a newer request has been issued since we were created, bail out.
+            if (generation.get() != myGeneration) {
+                Log.w(TAG, "Init callback gen=$myGeneration is stale (current=${generation.get()}), skipping")
+                return@OnInitListener
+            }
+
             if (status != TextToSpeech.SUCCESS) {
+                Log.e(TAG, "TTS init failed with status=$status for gen=$myGeneration")
                 onDoneCallback?.invoke()
                 onDoneCallback = null
                 return@OnInitListener
@@ -103,12 +128,13 @@ class GreetingManager(private val context: Context) {
 
             val instance = tts ?: return@OnInitListener
 
+            // Double-check generation again — another request could have
+            // slipped in between the status check and here.
+            if (generation.get() != myGeneration) return@OnInitListener
+
             // Apply language
-            if (desiredLang.isNotEmpty()) {
-                instance.language = Locale.forLanguageTag(desiredLang)
-            } else {
-                instance.language = Locale.getDefault()
-            }
+            val result = instance.setLanguage(desiredLocale)
+            Log.d(TAG, "gen=$myGeneration setLanguage($desiredLocale) result=$result engine=${instance.defaultEngine}")
 
             // Utterance listener
             instance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -145,9 +171,7 @@ class GreetingManager(private val context: Context) {
      * Get the list of available TTS engines on the device.
      */
     fun getAvailableEngines(): List<TextToSpeech.EngineInfo> {
-        // If we have a live instance, ask it first
-        tts?.engines?.let { if (it.isNotEmpty()) return it }
-
+        // Use a dedicated temporary instance — never the playback instance.
         val tempTts = try {
             TextToSpeech(context) { /* no-op */ }
         } catch (_: Exception) {
@@ -175,11 +199,13 @@ class GreetingManager(private val context: Context) {
     // ---------------------------------------------------------------
 
     fun stopGreeting() {
+        generation.incrementAndGet() // invalidate any pending init callbacks
         tts?.stop()
         onDoneCallback = null
     }
 
     fun shutdown() {
+        generation.incrementAndGet() // invalidate any pending init callbacks
         destroyTts()
         onDoneCallback = null
     }
