@@ -24,6 +24,7 @@ class SimulatedCallActivity : AppCompatActivity() {
     companion object {
         private const val AUTO_DISCONNECT_MS = 15_000L
         private const val LISTEN_NOTIF_ID = ACTIVE_CALL_NOTIFICATION_ID
+        const val EXTRA_SIM_ID = "extra_sim_id"
     }
 
     private lateinit var binding: ActivitySimulatedCallBinding
@@ -35,6 +36,7 @@ class SimulatedCallActivity : AppCompatActivity() {
     private var autoAnswerCountdown = 0
     private var isListeningIn = false
     private var recordingResult: RecordingResult? = null
+    private var simId: String? = null
 
     private enum class State { RINGING, ACTIVE, ENDED }
 
@@ -42,6 +44,8 @@ class SimulatedCallActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySimulatedCallBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        simId = intent.getStringExtra(EXTRA_SIM_ID)
 
         binding.callerName.text = getString(R.string.simulated_call_caller)
         binding.callerNumber.text = getString(R.string.simulated_call_number)
@@ -103,13 +107,24 @@ class SimulatedCallActivity : AppCompatActivity() {
         binding.callTimer.base = SystemClock.elapsedRealtime()
         binding.callTimer.start()
 
-        // Play greeting
-        val greeting = config.autoAnswerGreeting
+        // Play greeting — use per-SIM settings if a SIM was selected
+        val simSettings = simId?.let { config.getSimSettings(it) }
+        val greeting = if (simSettings != null && simSettings.greeting.isNotEmpty()) {
+            simSettings.greeting
+        } else {
+            config.autoAnswerGreeting
+        }
+        val languageTag = if (simSettings != null && simSettings.language.isNotEmpty()) {
+            simSettings.language
+        } else {
+            config.ttsLanguage
+        }
+
         if (greeting.isNotEmpty()) {
             handler.postDelayed({
                 greetingManager.playGreetingForCall(
                     greeting = greeting,
-                    languageTag = config.ttsLanguage,
+                    languageTag = languageTag,
                     engine = config.ttsEngine
                 )
             }, 500)
