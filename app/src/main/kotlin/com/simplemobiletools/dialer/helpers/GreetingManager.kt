@@ -27,50 +27,57 @@ class GreetingManager(private val context: Context) {
         val desiredEngine = engine.ifEmpty { context.config.ttsEngine }
         val desiredLang = languageTag.ifEmpty { context.config.ttsLanguage }
 
-        // Reuse existing instance only if both engine AND language match
-        if (isInitialized && tts != null && desiredEngine == currentEngine && desiredLang == currentLanguageTag) {
-            onReady()
-            return
-        }
+        // If the engine changed we must recreate the TTS instance
+        val needsNewEngine = !isInitialized || tts == null || desiredEngine != currentEngine
 
-        // Shut down existing instance — always recreate when engine or language changes
-        // to ensure the TTS engine fully applies the new configuration
-        if (tts != null) {
-            tts?.stop()
-            tts?.shutdown()
-            tts = null
-            isInitialized = false
-        }
-
-        currentEngine = desiredEngine
-        currentLanguageTag = desiredLang
-        pendingAction = onReady
-
-        val initListener = TextToSpeech.OnInitListener { status ->
-            isInitialized = status == TextToSpeech.SUCCESS
-            if (isInitialized) {
-                applyLanguage(desiredLang)
-                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {}
-                    override fun onDone(utteranceId: String?) {
-                        onDoneCallback?.invoke()
-                        onDoneCallback = null
-                    }
-                    @Deprecated("Deprecated in Java")
-                    override fun onError(utteranceId: String?) {
-                        onDoneCallback?.invoke()
-                        onDoneCallback = null
-                    }
-                })
-                pendingAction?.invoke()
-                pendingAction = null
+        if (needsNewEngine) {
+            // Shut down existing instance
+            if (tts != null) {
+                tts?.stop()
+                tts?.shutdown()
+                tts = null
+                isInitialized = false
             }
-        }
 
-        tts = if (desiredEngine.isNotEmpty()) {
-            TextToSpeech(context, initListener, desiredEngine)
+            currentEngine = desiredEngine
+            currentLanguageTag = desiredLang
+            pendingAction = {
+                // Always apply language right before invoking the ready callback
+                applyLanguage(desiredLang)
+                onReady()
+            }
+
+            val initListener = TextToSpeech.OnInitListener { status ->
+                isInitialized = status == TextToSpeech.SUCCESS
+                if (isInitialized) {
+                    tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) {}
+                        override fun onDone(utteranceId: String?) {
+                            onDoneCallback?.invoke()
+                            onDoneCallback = null
+                        }
+                        @Deprecated("Deprecated in Java")
+                        override fun onError(utteranceId: String?) {
+                            onDoneCallback?.invoke()
+                            onDoneCallback = null
+                        }
+                    })
+                    pendingAction?.invoke()
+                    pendingAction = null
+                }
+            }
+
+            tts = if (desiredEngine.isNotEmpty()) {
+                TextToSpeech(context, initListener, desiredEngine)
+            } else {
+                TextToSpeech(context, initListener)
+            }
         } else {
-            TextToSpeech(context, initListener)
+            // Same engine — reuse instance but always re-apply language
+            // Some TTS engines reset language asynchronously after init
+            currentLanguageTag = desiredLang
+            applyLanguage(desiredLang)
+            onReady()
         }
     }
 
