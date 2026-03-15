@@ -151,7 +151,8 @@
 
     <!-- Per-SIM Settings -->
     <string name="per_sim_settings">Per-SIM auto-answer settings</string>
-    <string name="per_sim_settings_summary">Configure language and greeting per SIM card</string>
+    <string name="per_sim_settings_summary">Configure engine, language and greeting per SIM card</string>
+    <string name="sim_engine">TTS engine for SIM %d</string>
     <string name="sim_greeting">Greeting for SIM %d</string>
     <string name="sim_language">Language for SIM %d</string>
     <string name="sim_greeting_hint">Custom greeting for this SIM (leave empty for global)</string>

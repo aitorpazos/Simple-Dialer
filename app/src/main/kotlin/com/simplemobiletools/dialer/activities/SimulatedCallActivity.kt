@@ -119,13 +119,18 @@ class SimulatedCallActivity : AppCompatActivity() {
         } else {
             config.ttsLanguage
         }
+        val enginePkg = if (simSettings != null && simSettings.engine.isNotEmpty()) {
+            simSettings.engine
+        } else {
+            config.ttsEngine
+        }
 
         if (greeting.isNotEmpty()) {
             handler.postDelayed({
-                greetingManager.playGreetingForCall(
+                greetingManager.playGreetingPreview(
                     greeting = greeting,
                     languageTag = languageTag,
-                    engine = config.ttsEngine
+                    engine = enginePkg
                 )
             }, 500)
         }
