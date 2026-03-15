@@ -129,4 +129,5 @@
         Kan du ikke finde nogle strenge? Der er mere på
         https://github.com/SimpleMobileTools/Simple-Commons/tree/master/commons/src/main/res
     -->
+    <string name="sim_engine">TTS-motor til SIM %d</string>
 </resources>

@@ -197,6 +197,7 @@ class CallService : InCallService() {
             }
             val greetingText = simSettings?.greeting?.takeIf { it.isNotEmpty() } ?: config.autoAnswerGreeting
             val languageTag = simSettings?.language?.takeIf { it.isNotEmpty() } ?: config.ttsLanguage
+            val enginePkg = simSettings?.engine?.takeIf { it.isNotEmpty() } ?: config.ttsEngine
 
             if (greetingText.isNotEmpty()) {
                 // Small delay to let audio route stabilise after answer
@@ -204,7 +205,7 @@ class CallService : InCallService() {
                     greetingManager.playGreetingForCall(
                         greeting = greetingText,
                         languageTag = languageTag,
-                        engine = config.ttsEngine
+                        engine = enginePkg
                     )
                 }, 500)
             }

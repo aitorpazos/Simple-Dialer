@@ -633,7 +633,7 @@ class SettingsActivity : SimpleActivity() {
             ))
 
             val valueView = com.simplemobiletools.commons.views.MyTextView(this).apply {
-                val hasCustom = simSettings.greeting.isNotEmpty() || simSettings.language.isNotEmpty()
+                val hasCustom = simSettings.greeting.isNotEmpty() || simSettings.language.isNotEmpty() || simSettings.engine.isNotEmpty()
                 text = if (hasCustom) getString(R.string.sim_settings_configured) else getString(R.string.sim_settings_default)
                 setTextAppearance(com.simplemobiletools.commons.R.style.SettingsTextValueStyle)
                 val lp = RelativeLayout.LayoutParams(
@@ -662,6 +662,30 @@ class SettingsActivity : SimpleActivity() {
             setPadding(40, 30, 40, 10)
         }
 
+        // TTS Engine selector
+        val engineLabel = android.widget.TextView(this).apply {
+            text = getString(R.string.sim_engine, simId)
+            setTextAppearance(android.R.style.TextAppearance_Material_Body1)
+            setPadding(0, 10, 0, 5)
+        }
+        layout.addView(engineLabel)
+
+        val engineButton = android.widget.Button(this).apply {
+            val enginePkg = currentSettings.engine
+            text = if (enginePkg.isEmpty()) {
+                getString(R.string.tts_engine_default)
+            } else {
+                val engines = greetingManager.getAvailableEngines()
+                engines.firstOrNull { it.name == enginePkg }?.label ?: enginePkg
+            }
+            isAllCaps = false
+        }
+        engineButton.tag = currentSettings.engine
+        engineButton.setOnClickListener {
+            showEnginePickerForSim(engineButton)
+        }
+        layout.addView(engineButton)
+
         // Language selector
         val languageLabel = android.widget.TextView(this).apply {
             text = getString(R.string.sim_language, simId)
@@ -678,7 +702,9 @@ class SettingsActivity : SimpleActivity() {
         // Store the current language tag
         languageButton.tag = currentSettings.language
         languageButton.setOnClickListener {
-            showLanguagePickerForSim(languageButton)
+            // Use per-SIM engine (or global) when listing available languages
+            val simEngine = (engineButton.tag as? String) ?: ""
+            showLanguagePickerForSim(languageButton, simEngine)
         }
         layout.addView(languageButton)
 
@@ -703,10 +729,11 @@ class SettingsActivity : SimpleActivity() {
             .setPositiveButton(R.string.ok) { _, _ ->
                 val newSettings = SimAutoAnswerSettings(
                     language = (languageButton.tag as? String) ?: "",
-                    greeting = greetingEdit.text.toString().trim()
+                    greeting = greetingEdit.text.toString().trim(),
+                    engine = (engineButton.tag as? String) ?: ""
                 )
                 config.setSimSettings(simIdStr, newSettings)
-                val hasCustom = newSettings.greeting.isNotEmpty() || newSettings.language.isNotEmpty()
+                val hasCustom = newSettings.greeting.isNotEmpty() || newSettings.language.isNotEmpty() || newSettings.engine.isNotEmpty()
                 valueView.text = if (hasCustom) getString(R.string.sim_settings_configured) else getString(R.string.sim_settings_default)
             }
             .setNeutralButton(R.string.call_recording_path_default) { _, _ ->
@@ -718,8 +745,41 @@ class SettingsActivity : SimpleActivity() {
             .show()
     }
 
-    private fun showLanguagePickerForSim(button: android.widget.Button) {
-        val enginePkg = config.ttsEngine
+    private fun showEnginePickerForSim(button: android.widget.Button) {
+        val engines = greetingManager.getAvailableEngines()
+        if (engines.isEmpty()) {
+            toast(R.string.tts_engine_default)
+            return
+        }
+
+        val items = arrayListOf(RadioItem(0, getString(R.string.tts_engine_default)))
+        engines.forEachIndexed { index, engine ->
+            items.add(RadioItem(index + 1, engine.label))
+        }
+
+        val currentEngine = (button.tag as? String) ?: ""
+        val selectedIndex = if (currentEngine.isEmpty()) {
+            0
+        } else {
+            val idx = engines.indexOfFirst { it.name == currentEngine }
+            if (idx >= 0) idx + 1 else 0
+        }
+
+        RadioGroupDialog(this@SettingsActivity, items, selectedIndex) {
+            val selected = it as Int
+            val newEngine = if (selected == 0) "" else engines[selected - 1].name
+            button.tag = newEngine
+            button.text = if (newEngine.isEmpty()) {
+                getString(R.string.tts_engine_default)
+            } else {
+                engines.firstOrNull { e -> e.name == newEngine }?.label ?: newEngine
+            }
+        }
+    }
+
+    private fun showLanguagePickerForSim(button: android.widget.Button, simEngine: String = "") {
+        // Use per-SIM engine if set, otherwise fall back to global engine
+        val enginePkg = simEngine.ifEmpty { config.ttsEngine }
         val initListener = TextToSpeech.OnInitListener { status ->
             if (status != TextToSpeech.SUCCESS) {
                 runOnUiThread { toast(R.string.tts_language_default) }

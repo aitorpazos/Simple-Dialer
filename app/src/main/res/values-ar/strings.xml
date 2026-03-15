@@ -155,7 +155,8 @@
 
     <!-- Per-SIM Settings -->
     <string name="per_sim_settings">إعدادات الرد التلقائي لكل شريحة SIM</string>
-    <string name="per_sim_settings_summary">تهيئة اللغة والترحيب لكل شريحة SIM</string>
+    <string name="per_sim_settings_summary">إعداد المحرك واللغة والتحية لكل بطاقة SIM</string>
+    <string name="sim_engine">محرك TTS لبطاقة SIM %d</string>
     <string name="sim_greeting">ترحيب الشريحة %d</string>
     <string name="sim_language">لغة الشريحة %d</string>
     <string name="sim_greeting_hint">ترحيب مخصص لهذه الشريحة (اتركه فارغاً للإعداد العام)</string>

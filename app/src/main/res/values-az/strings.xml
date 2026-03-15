@@ -156,7 +156,8 @@
 
     <!-- Per-SIM Settings -->
     <string name="per_sim_settings">Hər SIM üçün avtomatik cavab parametrləri</string>
-    <string name="per_sim_settings_summary">Hər SIM kart üçün dil və salamlama tənzimləyin</string>
+    <string name="per_sim_settings_summary">Hər SIM kart üçün mühərrik, dil və salamlama tənzimləyin</string>
+    <string name="sim_engine">SIM %d üçün TTS mühərriki</string>
     <string name="sim_greeting">SIM %d üçün salamlama</string>
     <string name="sim_language">SIM %d üçün dil</string>
     <string name="sim_greeting_hint">Bu SIM üçün xüsusi salamlama (ümumi üçün boş buraxın)</string>

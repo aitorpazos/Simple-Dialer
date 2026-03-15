@@ -27,14 +27,14 @@ class GreetingManager(private val context: Context) {
         val desiredEngine = engine.ifEmpty { context.config.ttsEngine }
         val desiredLang = languageTag.ifEmpty { context.config.ttsLanguage }
 
-        // Reinitialise if engine changed
-        if (isInitialized && tts != null && desiredEngine == currentEngine) {
-            applyLanguage(desiredLang)
+        // Reuse existing instance only if both engine AND language match
+        if (isInitialized && tts != null && desiredEngine == currentEngine && desiredLang == currentLanguageTag) {
             onReady()
             return
         }
 
-        // Shut down existing instance if engine changed
+        // Shut down existing instance — always recreate when engine or language changes
+        // to ensure the TTS engine fully applies the new configuration
         if (tts != null) {
             tts?.stop()
             tts?.shutdown()
