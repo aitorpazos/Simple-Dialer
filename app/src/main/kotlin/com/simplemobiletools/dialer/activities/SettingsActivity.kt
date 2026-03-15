@@ -771,8 +771,29 @@ class SettingsActivity : SimpleActivity() {
 
     private fun setupSimulateCall() {
         binding.settingsSimulateCallHolder.setOnClickListener {
-            val intent = Intent(this, SimulatedCallActivity::class.java)
-            startActivity(intent)
+            val simAccounts = getAvailableSIMCardLabels()
+            if (simAccounts.size < 2) {
+                // Single SIM or no SIM — launch directly
+                val intent = Intent(this, SimulatedCallActivity::class.java)
+                startActivity(intent)
+            } else {
+                // Multiple SIMs — let user pick which SIM to simulate
+                val items = arrayListOf(
+                    RadioItem(0, getString(R.string.sim_global_settings))
+                )
+                simAccounts.forEach { sim ->
+                    items.add(RadioItem(sim.id, getString(R.string.sim_settings_title, sim.id, sim.label)))
+                }
+
+                RadioGroupDialog(this, items, 0) { selected ->
+                    val intent = Intent(this, SimulatedCallActivity::class.java)
+                    val simId = selected as Int
+                    if (simId > 0) {
+                        intent.putExtra(SimulatedCallActivity.EXTRA_SIM_ID, simId.toString())
+                    }
+                    startActivity(intent)
+                }
+            }
         }
     }
 

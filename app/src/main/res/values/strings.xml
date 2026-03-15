@@ -155,6 +155,7 @@
     <string name="sim_greeting">Greeting for SIM %d</string>
     <string name="sim_language">Language for SIM %d</string>
     <string name="sim_greeting_hint">Custom greeting for this SIM (leave empty for global)</string>
+    <string name="sim_global_settings">Global settings (no SIM override)</string>
     <string name="sim_settings_title">SIM %d — %s</string>
     <string name="sim_settings_configured">Configured</string>
     <string name="sim_settings_default">Using global defaults</string>
