@@ -4,8 +4,12 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
+import androidx.core.content.FileProvider
+import androidx.documentfile.provider.DocumentFile
 import com.simplemobiletools.dialer.extensions.config
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * Manages call transcription storage and retrieval.
@@ -24,6 +28,105 @@ class TranscriptionManager(private val context: Context) {
             dir.mkdirs()
         }
         return dir
+    }
+
+    /**
+     * Find the recording filename for a call by matching phone number and approximate timestamp.
+     * Recording filenames follow: call_{sanitizedNumber}_{yyyyMMdd_HHmmss}.m4a
+     *
+     * @param phoneNumber the phone number from the call
+     * @param startTimestampSec call start timestamp in seconds (from RecentCall.startTS)
+     * @return the recording filename (e.g. "call_+123_20260317_080000.m4a") or null
+     */
+    fun findRecordingForCall(phoneNumber: String, startTimestampSec: Int): String? {
+        val sanitizedNumber = phoneNumber.replace(Regex("[^0-9+]"), "")
+        val prefix = "call_${sanitizedNumber}_"
+
+        // Check default directory
+        val dir = getDefaultTranscriptionsDir()
+        val match = findMatchingFile(dir, prefix, startTimestampSec)
+        if (match != null) return match.name
+
+        // Check custom SAF directory
+        val customUriString = context.config.callRecordingPath
+        if (customUriString.isNotEmpty()) {
+            try {
+                val treeUri = Uri.parse(customUriString)
+                val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
+                if (treeDoc != null) {
+                    val matchDoc = treeDoc.listFiles()
+                        .filter { it.name?.startsWith(prefix) == true && it.name?.endsWith(".m4a") == true }
+                        .mapNotNull { doc ->
+                            val name = doc.name ?: return@mapNotNull null
+                            val ts = extractTimestampFromFilename(name) ?: return@mapNotNull null
+                            Pair(name, ts)
+                        }
+                        .filter { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) < 120 }
+                        .minByOrNull { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) }
+                    if (matchDoc != null) return matchDoc.first
+                }
+            } catch (_: Exception) {}
+        }
+
+        return null
+    }
+
+    private fun findMatchingFile(dir: File, prefix: String, startTimestampSec: Int): File? {
+        if (!dir.exists()) return null
+        return dir.listFiles()
+            ?.filter { it.name.startsWith(prefix) && it.name.endsWith(".m4a") }
+            ?.mapNotNull { file ->
+                val ts = extractTimestampFromFilename(file.name) ?: return@mapNotNull null
+                Pair(file, ts)
+            }
+            ?.filter { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) < 120 }
+            ?.minByOrNull { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) }
+            ?.first
+    }
+
+    /**
+     * Extract unix timestamp (seconds) from a recording filename like call_+123_20260317_080000.m4a
+     */
+    private fun extractTimestampFromFilename(filename: String): Long? {
+        val regex = Regex("""call_.+_(\d{8}_\d{6})\.m4a""")
+        val match = regex.find(filename) ?: return null
+        return try {
+            val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+            sdf.parse(match.groupValues[1])?.time?.div(1000)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Get a shareable URI for a recording by name.
+     * Checks both default directory and custom SAF directory.
+     */
+    fun getRecordingUriByName(recordingName: String): Uri? {
+        // Check default directory first
+        val file = File(getDefaultTranscriptionsDir(), recordingName)
+        if (file.exists()) {
+            return try {
+                FileProvider.getUriForFile(
+                    context, "${context.packageName}.fileprovider", file
+                )
+            } catch (_: Exception) {
+                Uri.fromFile(file)
+            }
+        }
+
+        // Check custom SAF directory
+        val customUriString = context.config.callRecordingPath
+        if (customUriString.isNotEmpty()) {
+            try {
+                val treeUri = Uri.parse(customUriString)
+                val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
+                val doc = treeDoc?.listFiles()?.firstOrNull { it.name == recordingName }
+                if (doc != null) return doc.uri
+            } catch (_: Exception) {}
+        }
+
+        return null
     }
 
     /**
@@ -89,7 +192,7 @@ class TranscriptionManager(private val context: Context) {
         if (ttsLang.isNotEmpty()) {
             return ttsLang
         }
-        return java.util.Locale.getDefault().toLanguageTag()
+        return Locale.getDefault().toLanguageTag()
     }
 
     /**
