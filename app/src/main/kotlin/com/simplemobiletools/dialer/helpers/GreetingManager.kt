@@ -174,6 +174,12 @@ class GreetingManager(private val context: Context) {
      *
      * Applying both ensures the engine receives the correct language regardless
      * of which field it checks internally.
+     *
+     * IMPORTANT: The Android TTS framework may cache a default voice name
+     * during initialization (from the device locale). `setLanguage()` does NOT
+     * clear this cached voice name. So if `setVoice()` fails or is skipped,
+     * the engine receives a stale voice name that may be for the wrong language.
+     * We mitigate this by always calling `setVoice()` and verifying the result.
      */
     private fun applyLanguageAndSpeak(
         instance: TextToSpeech,
@@ -201,6 +207,9 @@ class GreetingManager(private val context: Context) {
         // --- Step 2: Also try to set an explicit Voice ---
         // This provides an additional signal (request.voiceName) for engines
         // that prefer voice-based selection over language-based selection.
+        // Critically, this also overrides any stale voice name cached by the
+        // framework during initialization.
+        var voiceSet = false
         try {
             val allVoices = instance.voices
             if (allVoices != null && allVoices.isNotEmpty()) {
@@ -233,12 +242,25 @@ class GreetingManager(private val context: Context) {
 
                 if (match != null) {
                     val setResult = instance.setVoice(match)
+                    voiceSet = setResult == TextToSpeech.SUCCESS
                     Log.d(TAG, "gen=$myGeneration setVoice(${match.name}, locale=${match.locale}) " +
-                        "result=$setResult")
+                        "result=$setResult voiceSet=$voiceSet")
+
+                    // If setVoice succeeded, call setLanguage AGAIN to ensure
+                    // request.language matches the voice we just set.
+                    // Some engines use request.language as the primary signal,
+                    // and setVoice() may have changed the framework's internal
+                    // language state to the voice's locale (which could differ
+                    // slightly from desiredLocale).
+                    if (voiceSet) {
+                        instance.setLanguage(desiredLocale)
+                    }
                 } else {
                     Log.w(TAG, "gen=$myGeneration no voice found for locale=$desiredLocale " +
                         "among ${allVoices.size} voices, relying on setLanguage only")
                 }
+            } else {
+                Log.w(TAG, "gen=$myGeneration getVoices returned null/empty, relying on setLanguage only")
             }
         } catch (e: Exception) {
             Log.w(TAG, "gen=$myGeneration getVoices/setVoice failed: ${e.message}")
@@ -247,7 +269,7 @@ class GreetingManager(private val context: Context) {
         // Log final state
         val finalVoice = try { instance.voice } catch (_: Exception) { null }
         Log.d(TAG, "gen=$myGeneration final voice=${finalVoice?.name} locale=${finalVoice?.locale} " +
-            "engine=${instance.defaultEngine}")
+            "voiceSet=$voiceSet engine=${instance.defaultEngine}")
 
         // Set up utterance listener
         instance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -378,7 +400,12 @@ class GreetingManager(private val context: Context) {
                                 v.locale.language == desiredLocale.language
                             }
                         }
-                        if (match != null) inst.setVoice(match)
+                        if (match != null) {
+                            inst.setVoice(match)
+                            // Re-apply setLanguage after setVoice to ensure
+                            // request.language is correct (some engines check this)
+                            inst.setLanguage(desiredLocale)
+                        }
                     }
                 } catch (_: Exception) {}
 
