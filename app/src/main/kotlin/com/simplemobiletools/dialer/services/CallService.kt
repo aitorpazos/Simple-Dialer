@@ -200,6 +200,8 @@ class CallService : InCallService() {
             val enginePkg = simSettings?.engine?.takeIf { it.isNotEmpty() } ?: config.ttsEngine
 
             if (greetingText.isNotEmpty()) {
+                // Start recording BEFORE greeting so the greeting itself is captured
+                startRecordingIfEnabled()
                 // Small delay to let audio route stabilise after answer
                 handler.postDelayed({
                     greetingManager.playGreetingForCall(
@@ -207,8 +209,7 @@ class CallService : InCallService() {
                         languageTag = languageTag,
                         engine = enginePkg
                     ) {
-                        // Start recording AFTER greeting finishes to avoid overlapping voices
-                        handler.post { startRecordingIfEnabled() }
+                        // Greeting finished — recording continues to capture caller's response
                     }
                 }, 500)
             } else {
