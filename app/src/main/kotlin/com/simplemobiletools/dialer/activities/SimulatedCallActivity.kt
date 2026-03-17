@@ -23,7 +23,6 @@ import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.receivers.ActiveCallActionReceiver
 import com.simplemobiletools.dialer.services.TranscriptionService
 import java.io.File
-import com.simplemobiletools.dialer.services.TranscriptionService
 
 class SimulatedCallActivity : AppCompatActivity() {
     companion object {
