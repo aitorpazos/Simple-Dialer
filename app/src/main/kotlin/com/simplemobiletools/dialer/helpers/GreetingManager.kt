@@ -304,6 +304,109 @@ class GreetingManager(private val context: Context) {
     // Lifecycle
     // ---------------------------------------------------------------
 
+    /**
+     * Synthesize the greeting text to a WAV file.
+     *
+     * This is used by SimulatedCallActivity to capture the TTS greeting as
+     * audio for transcription — since simulated calls don't have a real phone
+     * call audio route, the MediaRecorder (VOICE_COMMUNICATION source) cannot
+     * capture TTS output played through the speaker.
+     *
+     * @param outputFile  the WAV file to write to
+     * @param greeting    greeting text (falls back to config)
+     * @param languageTag BCP-47 tag (falls back to config)
+     * @param engine      TTS engine package (falls back to config)
+     * @param onDone      called when synthesis finishes (success or failure)
+     */
+    fun synthesizeToFile(
+        outputFile: java.io.File,
+        greeting: String? = null,
+        languageTag: String = "",
+        engine: String = "",
+        onDone: ((success: Boolean) -> Unit)? = null
+    ) {
+        val text = greeting ?: context.config.autoAnswerGreeting
+        if (text.isEmpty()) {
+            onDone?.invoke(false)
+            return
+        }
+
+        val desiredEngine = engine.ifEmpty { context.config.ttsEngine }
+        val desiredLang = languageTag.ifEmpty { context.config.ttsLanguage }
+        val desiredLocale = if (desiredLang.isNotEmpty()) {
+            Locale.forLanguageTag(desiredLang)
+        } else {
+            Locale.getDefault()
+        }
+
+        val myGeneration = generation.incrementAndGet()
+        destroyTts()
+
+        val initListener = TextToSpeech.OnInitListener { status ->
+            if (generation.get() != myGeneration) return@OnInitListener
+            if (status != TextToSpeech.SUCCESS) {
+                Log.e(TAG, "TTS init failed for synthesizeToFile gen=$myGeneration")
+                onDone?.invoke(false)
+                return@OnInitListener
+            }
+            val instance = tts ?: return@OnInitListener
+            if (generation.get() != myGeneration) return@OnInitListener
+
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                if (generation.get() != myGeneration) return@postDelayed
+                val inst = tts ?: return@postDelayed
+
+                // Apply language (same logic as applyLanguageAndSpeak)
+                inst.setLanguage(desiredLocale)
+                try {
+                    val allVoices = inst.voices
+                    if (allVoices != null && allVoices.isNotEmpty()) {
+                        var match = allVoices.firstOrNull { v ->
+                            !v.isNetworkConnectionRequired &&
+                            v.locale.language == desiredLocale.language &&
+                            v.locale.country.equals(desiredLocale.country, ignoreCase = true) &&
+                            desiredLocale.country.isNotEmpty()
+                        }
+                        if (match == null) {
+                            match = allVoices.firstOrNull { v ->
+                                !v.isNetworkConnectionRequired &&
+                                v.locale.language == desiredLocale.language
+                            }
+                        }
+                        if (match == null) {
+                            match = allVoices.firstOrNull { v ->
+                                v.locale.language == desiredLocale.language
+                            }
+                        }
+                        if (match != null) inst.setVoice(match)
+                    }
+                } catch (_: Exception) {}
+
+                inst.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {}
+                    override fun onDone(utteranceId: String?) {
+                        Log.d(TAG, "synthesizeToFile complete: ${outputFile.absolutePath}")
+                        onDone?.invoke(true)
+                    }
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(utteranceId: String?) {
+                        Log.e(TAG, "synthesizeToFile error")
+                        onDone?.invoke(false)
+                    }
+                })
+
+                val params = android.os.Bundle()
+                inst.synthesizeToFile(text, params, outputFile, "synth_to_file_$myGeneration")
+            }, 300)
+        }
+
+        tts = if (desiredEngine.isNotEmpty()) {
+            TextToSpeech(context, initListener, desiredEngine)
+        } else {
+            TextToSpeech(context, initListener)
+        }
+    }
+
     fun stopGreeting() {
         generation.incrementAndGet() // invalidate any pending init callbacks
         tts?.stop()

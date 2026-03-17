@@ -147,9 +147,94 @@ class TranscriptionService : Service() {
     }
 
     /**
-     * Decode an audio file (m4a/AAC) to 16kHz mono 16-bit PCM.
+     * Decode an audio file (m4a/AAC/WAV) to 16kHz mono 16-bit PCM.
      */
     private fun decodeAudioToPcm16k(uri: Uri): ByteArray? {
+        // For WAV files (from TTS synthesizeToFile), try direct WAV parsing first
+        // since MediaExtractor may not handle all WAV variants reliably.
+        val uriPath = uri.path ?: ""
+        if (uriPath.endsWith(".wav", ignoreCase = true)) {
+            val wavPcm = tryParseWavDirect(uri)
+            if (wavPcm != null) return wavPcm
+            Log.d(TAG, "Direct WAV parse failed, falling back to MediaExtractor")
+        }
+
+        return decodeWithMediaCodec(uri)
+    }
+
+    /**
+     * Parse a WAV file directly — reads PCM data, converts to mono 16kHz.
+     * TTS synthesizeToFile() produces standard RIFF WAV with PCM encoding.
+     */
+    private fun tryParseWavDirect(uri: Uri): ByteArray? {
+        try {
+            val inputStream = if (uri.scheme == "content") {
+                contentResolver.openInputStream(uri)
+            } else {
+                java.io.FileInputStream(uri.path!!)
+            } ?: return null
+
+            val header = ByteArray(44)
+            val read = inputStream.read(header)
+            if (read < 44) {
+                inputStream.close()
+                return null
+            }
+
+            // Verify RIFF header
+            val riff = String(header, 0, 4)
+            val wave = String(header, 8, 4)
+            if (riff != "RIFF" || wave != "WAVE") {
+                inputStream.close()
+                return null
+            }
+
+            // Parse WAV header
+            val buf = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
+            val audioFormat = buf.getShort(20).toInt()  // 1 = PCM
+            val channels = buf.getShort(22).toInt()
+            val sampleRate = buf.getInt(24)
+            val bitsPerSample = buf.getShort(34).toInt()
+
+            if (audioFormat != 1) { // Not PCM
+                inputStream.close()
+                return null
+            }
+
+            Log.d(TAG, "WAV direct: ${sampleRate}Hz, ${channels}ch, ${bitsPerSample}bit")
+
+            // Read all remaining PCM data
+            val pcmData = inputStream.readBytes()
+            inputStream.close()
+
+            if (pcmData.isEmpty()) return null
+
+            // Convert to 16-bit if needed (TTS usually outputs 16-bit)
+            val pcm16 = if (bitsPerSample == 16) pcmData else return null // only support 16-bit
+
+            // Convert to mono if stereo
+            val monoPcm = if (channels > 1) {
+                convertToMono(pcm16, channels)
+            } else {
+                pcm16
+            }
+
+            // Resample to 16kHz if needed
+            return if (sampleRate != TARGET_SAMPLE_RATE) {
+                resample(monoPcm, sampleRate, TARGET_SAMPLE_RATE)
+            } else {
+                monoPcm
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "WAV direct parse failed", e)
+            return null
+        }
+    }
+
+    /**
+     * Decode audio using MediaExtractor + MediaCodec (for m4a/AAC and other formats).
+     */
+    private fun decodeWithMediaCodec(uri: Uri): ByteArray? {
         try {
             val extractor = MediaExtractor()
 
