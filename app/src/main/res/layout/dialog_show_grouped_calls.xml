@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/select_grouped_calls_holder"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
 
     <com.simplemobiletools.commons.views.MyRecyclerView
         android:id="@+id/select_grouped_calls_list"
@@ -14,4 +15,142 @@
         android:scrollbars="none"
         app:layoutManager="com.simplemobiletools.commons.views.MyLinearLayoutManager" />
 
-</RelativeLayout>
+    <!-- Recording & transcription actions -->
+    <LinearLayout
+        android:id="@+id/recording_actions_holder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:paddingTop="@dimen/medium_margin">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?android:attr/listDivider"
+            android:layout_marginStart="@dimen/normal_margin"
+            android:layout_marginEnd="@dimen/normal_margin" />
+
+        <LinearLayout
+            android:id="@+id/btn_play_recording"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/normal_margin"
+            android:paddingEnd="@dimen/normal_margin"
+            android:paddingTop="@dimen/activity_margin"
+            android:paddingBottom="@dimen/activity_margin"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/btn_play_recording_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_play_arrow_vector" />
+
+            <TextView
+                android:id="@+id/btn_play_recording_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/normal_margin"
+                android:text="@string/play_recording"
+                android:textSize="@dimen/bigger_text_size" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_share_recording"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/normal_margin"
+            android:paddingEnd="@dimen/normal_margin"
+            android:paddingTop="@dimen/activity_margin"
+            android:paddingBottom="@dimen/activity_margin"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/btn_share_recording_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_share_vector" />
+
+            <TextView
+                android:id="@+id/btn_share_recording_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/normal_margin"
+                android:text="@string/share_recording"
+                android:textSize="@dimen/bigger_text_size" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_show_transcription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/normal_margin"
+            android:paddingEnd="@dimen/normal_margin"
+            android:paddingTop="@dimen/activity_margin"
+            android:paddingBottom="@dimen/activity_margin"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/btn_show_transcription_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_description_vector" />
+
+            <TextView
+                android:id="@+id/btn_show_transcription_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/normal_margin"
+                android:text="@string/show_transcription"
+                android:textSize="@dimen/bigger_text_size" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/btn_share_transcription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/normal_margin"
+            android:paddingEnd="@dimen/normal_margin"
+            android:paddingTop="@dimen/activity_margin"
+            android:paddingBottom="@dimen/activity_margin"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/btn_share_transcription_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_share_vector" />
+
+            <TextView
+                android:id="@+id/btn_share_transcription_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/normal_margin"
+                android:text="@string/share_transcription"
+                android:textSize="@dimen/bigger_text_size" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>
