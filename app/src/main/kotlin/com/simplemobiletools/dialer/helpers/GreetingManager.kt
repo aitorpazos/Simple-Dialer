@@ -26,14 +26,13 @@ private const val TAG = "GreetingManager"
  * The generation counter ensures that only the *latest* request's init
  * callback ever proceeds to speak.  Any older callback is a no-op.
  *
- * **Language fix:** Some TTS engines (notably Google TTS) ignore setLanguage()
- * when called immediately inside OnInitListener, or return success but still
- * speak in the previously cached language.  To work around this:
- *  1. We always fully destroy the previous TTS instance before creating a new one.
- *  2. After setLanguage(), we verify the engine's actual language matches what
- *     we requested.  If it doesn't, we retry setLanguage() after a short delay.
- *  3. We pass the language as a TTS param via `KEY_PARAM_LANGUAGE` (undocumented
- *     but honoured by some engines) as an additional safety net.
+ * **Language fix:** Many TTS engines (Google TTS, Piper TTS, etc.) ignore or
+ * inconsistently apply `setLanguage()`.  To reliably select the right language:
+ *  1. We enumerate all voices via `getVoices()`.
+ *  2. We find a voice matching the desired locale (exact match, then language-only).
+ *  3. We use `setVoice()` to explicitly select it — this is much more reliable
+ *     than `setLanguage()` across different engine implementations.
+ *  4. We fall back to `setLanguage()` only when `getVoices()` is unavailable.
  */
 class GreetingManager(private val context: Context) {
     private var tts: TextToSpeech? = null
@@ -153,14 +152,20 @@ class GreetingManager(private val context: Context) {
     }
 
     /**
-     * Apply the desired locale, verify it took effect, and then speak.
+     * Apply the desired locale and speak.
      *
-     * Some TTS engines (especially Google TTS) have a race condition where
-     * setLanguage() returns SUCCESS but the engine internally still uses the
-     * previous language.  We work around this by:
-     *  1. Calling setLanguage() and checking the return code.
-     *  2. Verifying instance.voice?.locale or instance.language matches.
-     *  3. If mismatch, posting a short delayed retry (100ms) up to 2 times.
+     * Many TTS engines (Google TTS, Piper TTS, etc.) do not reliably honour
+     * [TextToSpeech.setLanguage].  The most robust approach is:
+     *
+     *  1. Enumerate all voices via [TextToSpeech.getVoices].
+     *  2. Find a voice whose locale matches the desired language tag
+     *     (exact match first, then language-only fallback).
+     *  3. Use [TextToSpeech.setVoice] to explicitly select it.
+     *  4. Fall back to [TextToSpeech.setLanguage] only when no matching
+     *     voice is found (e.g. very old engines that don't expose voices).
+     *
+     * This fixes the issue where the first call uses the right language but
+     * subsequent calls revert to the engine's default/cached language.
      */
     private fun applyLanguageAndSpeak(
         instance: TextToSpeech,
@@ -169,41 +174,71 @@ class GreetingManager(private val context: Context) {
         stream: Int,
         utteranceId: String,
         myGeneration: Int,
-        attempt: Int = 0
+        @Suppress("UNUSED_PARAMETER") attempt: Int = 0
     ) {
         if (generation.get() != myGeneration) return
 
-        val result = instance.setLanguage(desiredLocale)
-        val actualLocale = try {
-            instance.voice?.locale
-        } catch (_: Exception) {
-            null
-        }
-
-        Log.d(TAG, "gen=$myGeneration setLanguage($desiredLocale) result=$result " +
-            "actualVoiceLocale=$actualLocale engine=${instance.defaultEngine} attempt=$attempt")
-
-        // Check if the language was actually applied
-        val languageMismatch = actualLocale != null &&
-            actualLocale.language != desiredLocale.language
-
-        if (languageMismatch && attempt < 2) {
-            // Retry after a short delay — the engine may need time to switch
-            Log.w(TAG, "gen=$myGeneration language mismatch: wanted=${desiredLocale.language} " +
-                "got=${actualLocale?.language}, retrying in 150ms (attempt ${attempt + 1})")
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                if (generation.get() == myGeneration) {
-                    applyLanguageAndSpeak(instance, desiredLocale, text, stream, utteranceId, myGeneration, attempt + 1)
+        // --- Step 1: Try to find and set an explicit Voice ---
+        var voiceSet = false
+        try {
+            val allVoices = instance.voices
+            if (allVoices != null && allVoices.isNotEmpty()) {
+                // Exact locale match (language + country, e.g. en-GB)
+                var match = allVoices.firstOrNull { v ->
+                    !v.isNetworkConnectionRequired &&
+                    v.locale.language == desiredLocale.language &&
+                    v.locale.country == desiredLocale.country &&
+                    desiredLocale.country.isNotEmpty()
                 }
-            }, 150)
-            return
+
+                // Fallback: language-only match (e.g. "en" matches any en-* voice)
+                if (match == null) {
+                    match = allVoices.firstOrNull { v ->
+                        !v.isNetworkConnectionRequired &&
+                        v.locale.language == desiredLocale.language
+                    }
+                }
+
+                // Last resort: allow network voices too
+                if (match == null) {
+                    match = allVoices.firstOrNull { v ->
+                        v.locale.language == desiredLocale.language &&
+                        v.locale.country == desiredLocale.country &&
+                        desiredLocale.country.isNotEmpty()
+                    } ?: allVoices.firstOrNull { v ->
+                        v.locale.language == desiredLocale.language
+                    }
+                }
+
+                if (match != null) {
+                    val setResult = instance.setVoice(match)
+                    voiceSet = (setResult == TextToSpeech.SUCCESS)
+                    Log.d(TAG, "gen=$myGeneration setVoice(${match.name}, locale=${match.locale}) " +
+                        "result=$setResult voiceSet=$voiceSet")
+                } else {
+                    Log.w(TAG, "gen=$myGeneration no voice found for locale=$desiredLocale " +
+                        "among ${allVoices.size} voices")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "gen=$myGeneration getVoices/setVoice failed: ${e.message}")
         }
 
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Log.e(TAG, "gen=$myGeneration language $desiredLocale not supported (result=$result), " +
-                "falling back to default")
-            // Don't call setLanguage again — let the engine use its default
+        // --- Step 2: Fallback to setLanguage if setVoice didn't work ---
+        if (!voiceSet) {
+            val result = instance.setLanguage(desiredLocale)
+            Log.d(TAG, "gen=$myGeneration setLanguage($desiredLocale) result=$result (fallback)")
+
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                Log.e(TAG, "gen=$myGeneration language $desiredLocale not supported (result=$result), " +
+                    "engine will use its default")
+            }
         }
+
+        // Log final state
+        val finalVoice = try { instance.voice } catch (_: Exception) { null }
+        Log.d(TAG, "gen=$myGeneration final voice=${finalVoice?.name} locale=${finalVoice?.locale} " +
+            "engine=${instance.defaultEngine}")
 
         // Set up utterance listener
         instance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
