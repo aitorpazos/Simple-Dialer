@@ -6,8 +6,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -20,6 +22,8 @@ import com.simplemobiletools.dialer.extensions.config
 import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.receivers.ActiveCallActionReceiver
 import com.simplemobiletools.dialer.services.TranscriptionService
+import java.io.File
+import com.simplemobiletools.dialer.services.TranscriptionService
 
 class SimulatedCallActivity : AppCompatActivity() {
     companion object {
@@ -31,6 +35,7 @@ class SimulatedCallActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySimulatedCallBinding
     private val handler = Handler(Looper.getMainLooper())
     private val greetingManager by lazy { GreetingManager(this) }
+    private val synthGreetingManager by lazy { GreetingManager(this) }
     private val callRecordingManager by lazy { CallRecordingManager(this) }
 
     private var state = State.RINGING
@@ -38,6 +43,7 @@ class SimulatedCallActivity : AppCompatActivity() {
     private var isListeningIn = false
     private var recordingResult: RecordingResult? = null
     private var simId: String? = null
+    private var greetingAudioFile: File? = null
 
     private enum class State { RINGING, ACTIVE, ENDED }
 
@@ -70,6 +76,7 @@ class SimulatedCallActivity : AppCompatActivity() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
         greetingManager.shutdown()
+        synthGreetingManager.shutdown()
         dismissListenNotification()
     }
 
@@ -127,8 +134,23 @@ class SimulatedCallActivity : AppCompatActivity() {
         }
 
         if (greeting.isNotEmpty()) {
-            // Start recording BEFORE greeting so the greeting itself is captured
+            // Start recording BEFORE greeting so ambient mic audio is captured
             startRecordingIfEnabled()
+
+            // Synthesize greeting to a WAV file for transcription using a
+            // separate GreetingManager instance so it doesn't conflict with
+            // the playback instance.
+            val greetingDir = File(getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
+            greetingDir.mkdirs()
+            greetingAudioFile = File(greetingDir, "greeting_simulated_${System.currentTimeMillis()}.wav")
+            synthGreetingManager.synthesizeToFile(
+                outputFile = greetingAudioFile!!,
+                greeting = greeting,
+                languageTag = languageTag,
+                engine = enginePkg
+            ) { /* synthesis done — file is ready for transcription at call end */ }
+
+            // Also play the greeting audibly so the user hears it
             handler.postDelayed({
                 greetingManager.playGreetingPreview(
                     greeting = greeting,
@@ -195,14 +217,32 @@ class SimulatedCallActivity : AppCompatActivity() {
             )
         }
 
-        // Trigger transcription if recording exists and transcription is enabled
-        if (recordingResult != null && config.callTranscriptionEnabled) {
-            val transcriptionManager = TranscriptionManager(this)
-            val transcriptionUri = transcriptionManager.getRecordingUri(recordingResult!!)
-            if (transcriptionUri != null) {
+        // Trigger transcription if transcription is enabled.
+        // For simulated calls, prefer the synthesized greeting WAV file since
+        // the mic recording (VOICE_COMMUNICATION) cannot capture TTS output.
+        // Fall back to the mic recording if no greeting was synthesized.
+        if (config.callTranscriptionEnabled) {
+            val transcriptionUri: Uri?
+            val transcriptionName: String
+
+            if (greetingAudioFile != null && greetingAudioFile!!.exists() && greetingAudioFile!!.length() > 0) {
+                // Use the synthesized greeting audio
+                transcriptionUri = Uri.fromFile(greetingAudioFile!!)
+                transcriptionName = greetingAudioFile!!.name
+            } else if (recordingResult != null) {
+                // Fall back to mic recording
+                val transcriptionManager = TranscriptionManager(this)
+                transcriptionUri = transcriptionManager.getRecordingUri(recordingResult!!)
+                transcriptionName = recordingResult!!.name
+            } else {
+                transcriptionUri = null
+                transcriptionName = ""
+            }
+
+            if (transcriptionUri != null && transcriptionName.isNotEmpty()) {
                 try {
                     val transcriptionIntent = TranscriptionService.createIntent(
-                        this, transcriptionUri, recordingResult!!.name
+                        this, transcriptionUri, transcriptionName
                     )
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                         startForegroundService(transcriptionIntent)
