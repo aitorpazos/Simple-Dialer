@@ -123,6 +123,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getString(TTS_LANGUAGE, "") ?: ""
         set(value) = prefs.edit().putString(TTS_LANGUAGE, value).apply()
 
+    var callTranscriptionEnabled: Boolean
+        get() = prefs.getBoolean(CALL_TRANSCRIPTION_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(CALL_TRANSCRIPTION_ENABLED, value).apply()
+
     /**
      * Per-SIM auto-answer settings stored as JSON: {"1": {"language":"es-ES","greeting":"Hola..."}, ...}
      * Key is the SIM id (1-based index from getAvailableSIMCardLabels).

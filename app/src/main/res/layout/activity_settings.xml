@@ -444,6 +444,29 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:id="@+id/settings_call_transcription_holder"
+                style="@style/SettingsHolderCheckboxStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.simplemobiletools.commons.views.MyAppCompatCheckbox
+                    android:id="@+id/settings_call_transcription"
+                    style="@style/SettingsCheckboxStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/call_transcription" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_call_transcription_summary"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_call_transcription"
+                    android:text="@string/call_transcription_summary" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_notification_actions_holder"
                 style="@style/SettingsHolderTextViewStyle"
                 android:layout_width="match_parent"
