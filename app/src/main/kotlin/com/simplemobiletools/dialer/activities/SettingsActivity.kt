@@ -115,6 +115,7 @@ class SettingsActivity : SimpleActivity() {
         setupCallsImport()
         setupCallRecording()
         setupCallRecordingPath()
+        setupOpenRecordingsFolder()
         setupCallTranscription()
         setupNotificationActions()
         setupAutoAnswer()
@@ -918,6 +919,53 @@ class SettingsActivity : SimpleActivity() {
 
         binding.settingsNotificationActionsHolder.setOnClickListener {
             showNotificationActionsDialog()
+        }
+    }
+
+    private fun setupOpenRecordingsFolder() {
+        binding.settingsOpenRecordingsFolderHolder.setOnClickListener {
+            val customUriString = config.callRecordingPath
+            if (customUriString.isNotEmpty()) {
+                // Custom SAF folder — open it with a document browser
+                try {
+                    val treeUri = Uri.parse(customUriString)
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(treeUri, "resource/folder")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    startActivity(intent)
+                } catch (_: Exception) {
+                    // Fallback: try ACTION_OPEN_DOCUMENT_TREE-style browsing
+                    try {
+                        val treeUri = Uri.parse(customUriString)
+                        val docUri = DocumentFile.fromTreeUri(this, treeUri)?.uri
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            data = docUri
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(intent)
+                    } catch (_: Exception) {
+                        toast(R.string.no_file_manager)
+                    }
+                }
+            } else {
+                // Default app-private folder
+                val dir = java.io.File(getExternalFilesDir(android.os.Environment.DIRECTORY_MUSIC), "CallRecordings")
+                if (!dir.exists()) dir.mkdirs()
+                try {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        this, "$packageName.fileprovider", dir
+                    )
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(uri, "resource/folder")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    startActivity(intent)
+                } catch (_: Exception) {
+                    toast(R.string.no_file_manager)
+                }
+            }
         }
     }
 

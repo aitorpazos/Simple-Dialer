@@ -125,6 +125,7 @@
     <string name="share_failed">Could not share</string>
     <string name="transcription_not_available">Transcription not available yet</string>
     <string name="transcription_in_progress">Transcribing call…</string>
+    <string name="transcription_progress">Transcribing… %d%%</string>
     <string name="transcription_downloading_model">Downloading speech model…</string>
     <string name="transcription_downloading_model_progress">Downloading speech model… %d%%</string>
     <string name="transcription_decoding_audio">Decoding audio…</string>
@@ -141,6 +142,16 @@
     <string name="copy_text">Copy</string>
     <string name="call_transcription">Call transcription</string>
     <string name="call_transcription_summary">Automatically transcribe recorded calls using offline speech recognition. Downloads a speech model (~50 MB) on first use.</string>
+
+    <!-- Recordings Folder -->
+    <string name="open_recordings_folder">Open recordings folder</string>
+    <string name="no_recordings_folder">No recordings folder found</string>
+    <string name="no_file_manager">No file manager app found</string>
+
+    <!-- Call History Recording/Transcription -->
+    <string name="play_recording">Play recording</string>
+    <string name="open_recording">Open recording</string>
+    <string name="show_transcription">Show transcription</string>
 
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>
