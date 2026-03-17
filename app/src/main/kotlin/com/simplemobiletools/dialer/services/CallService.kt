@@ -206,8 +206,14 @@ class CallService : InCallService() {
                         greeting = greetingText,
                         languageTag = languageTag,
                         engine = enginePkg
-                    )
+                    ) {
+                        // Start recording AFTER greeting finishes to avoid overlapping voices
+                        handler.post { startRecordingIfEnabled() }
+                    }
                 }, 500)
+            } else {
+                // No greeting — start recording immediately
+                startRecordingIfEnabled()
             }
 
             // Handle listen-in
@@ -225,9 +231,13 @@ class CallService : InCallService() {
                     showActiveCallNotification(false)
                 }
             }
+        } else {
+            // Non-auto-answered call — start recording immediately
+            startRecordingIfEnabled()
         }
+    }
 
-        // Start recording if enabled
+    private fun startRecordingIfEnabled() {
         if (config.callRecordingEnabled) {
             val number = currentCallNumber.ifEmpty { "unknown" }
             val success = callRecordingManager.startRecording(number)

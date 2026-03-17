@@ -316,14 +316,23 @@ class TranscriptionService : Service() {
             val model = Model(modelPath)
             val recognizer = Recognizer(model, TARGET_SAMPLE_RATE.toFloat())
 
-            // Feed audio in chunks
+            // Feed audio in chunks with progress updates
             val chunkSize = 4096
             var offset = 0
-            while (offset < pcmData.size) {
-                val end = minOf(offset + chunkSize, pcmData.size)
+            val totalSize = pcmData.size
+            var lastReportedPct = -1
+            while (offset < totalSize) {
+                val end = minOf(offset + chunkSize, totalSize)
                 val chunk = pcmData.copyOfRange(offset, end)
                 recognizer.acceptWaveForm(chunk, chunk.size)
                 offset = end
+
+                // Update progress notification every 5%
+                val pct = (offset.toLong() * 100 / totalSize).toInt()
+                if (pct / 5 > lastReportedPct / 5) {
+                    lastReportedPct = pct
+                    updateNotification(getString(R.string.transcription_progress, pct))
+                }
             }
 
             // Get final result
