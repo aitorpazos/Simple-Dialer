@@ -140,8 +140,15 @@ class GreetingManager(private val context: Context) {
             // slipped in between the status check and here.
             if (generation.get() != myGeneration) return@OnInitListener
 
-            // Apply language and verify it was actually set
-            applyLanguageAndSpeak(instance, desiredLocale, text, stream, utteranceId, myGeneration)
+            // Delay before applying language — some TTS engines (Piper TTS,
+            // Google TTS) haven't fully loaded their voice list when the init
+            // callback fires.  A short delay gives the engine time to populate
+            // getVoices() so that setVoice() can find the correct voice.
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                if (generation.get() != myGeneration) return@postDelayed
+                val inst = tts ?: return@postDelayed
+                applyLanguageAndSpeak(inst, desiredLocale, text, stream, utteranceId, myGeneration)
+            }, 300)
         }
 
         tts = if (desiredEngine.isNotEmpty()) {
@@ -155,17 +162,18 @@ class GreetingManager(private val context: Context) {
      * Apply the desired locale and speak.
      *
      * Many TTS engines (Google TTS, Piper TTS, etc.) do not reliably honour
-     * [TextToSpeech.setLanguage].  The most robust approach is:
+     * a single call to [TextToSpeech.setLanguage] or [TextToSpeech.setVoice].
+     * To maximise compatibility we apply BOTH:
      *
-     *  1. Enumerate all voices via [TextToSpeech.getVoices].
-     *  2. Find a voice whose locale matches the desired language tag
-     *     (exact match first, then language-only fallback).
-     *  3. Use [TextToSpeech.setVoice] to explicitly select it.
-     *  4. Fall back to [TextToSpeech.setLanguage] only when no matching
-     *     voice is found (e.g. very old engines that don't expose voices).
+     *  1. Call [TextToSpeech.setLanguage] first — this sets `request.language`
+     *     in the synthesis request, which engines like Piper TTS use to select
+     *     the correct voice model in `onSynthesizeText`.
+     *  2. Then enumerate voices via [TextToSpeech.getVoices] and call
+     *     [TextToSpeech.setVoice] to explicitly select a matching voice.
+     *     This sets `request.voiceName` which some engines prefer.
      *
-     * This fixes the issue where the first call uses the right language but
-     * subsequent calls revert to the engine's default/cached language.
+     * Applying both ensures the engine receives the correct language regardless
+     * of which field it checks internally.
      */
     private fun applyLanguageAndSpeak(
         instance: TextToSpeech,
@@ -178,8 +186,21 @@ class GreetingManager(private val context: Context) {
     ) {
         if (generation.get() != myGeneration) return
 
-        // --- Step 1: Try to find and set an explicit Voice ---
-        var voiceSet = false
+        // --- Step 1: Always call setLanguage first ---
+        // This ensures request.language is set in the synthesis request.
+        // Engines like Piper TTS check request.language in onSynthesizeText
+        // to decide which voice model to load.
+        val langResult = instance.setLanguage(desiredLocale)
+        Log.d(TAG, "gen=$myGeneration setLanguage($desiredLocale) result=$langResult")
+
+        if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
+            Log.e(TAG, "gen=$myGeneration language $desiredLocale not supported (result=$langResult), " +
+                "engine will use its default")
+        }
+
+        // --- Step 2: Also try to set an explicit Voice ---
+        // This provides an additional signal (request.voiceName) for engines
+        // that prefer voice-based selection over language-based selection.
         try {
             val allVoices = instance.voices
             if (allVoices != null && allVoices.isNotEmpty()) {
@@ -187,7 +208,7 @@ class GreetingManager(private val context: Context) {
                 var match = allVoices.firstOrNull { v ->
                     !v.isNetworkConnectionRequired &&
                     v.locale.language == desiredLocale.language &&
-                    v.locale.country == desiredLocale.country &&
+                    v.locale.country.equals(desiredLocale.country, ignoreCase = true) &&
                     desiredLocale.country.isNotEmpty()
                 }
 
@@ -203,7 +224,7 @@ class GreetingManager(private val context: Context) {
                 if (match == null) {
                     match = allVoices.firstOrNull { v ->
                         v.locale.language == desiredLocale.language &&
-                        v.locale.country == desiredLocale.country &&
+                        v.locale.country.equals(desiredLocale.country, ignoreCase = true) &&
                         desiredLocale.country.isNotEmpty()
                     } ?: allVoices.firstOrNull { v ->
                         v.locale.language == desiredLocale.language
@@ -212,27 +233,15 @@ class GreetingManager(private val context: Context) {
 
                 if (match != null) {
                     val setResult = instance.setVoice(match)
-                    voiceSet = (setResult == TextToSpeech.SUCCESS)
                     Log.d(TAG, "gen=$myGeneration setVoice(${match.name}, locale=${match.locale}) " +
-                        "result=$setResult voiceSet=$voiceSet")
+                        "result=$setResult")
                 } else {
                     Log.w(TAG, "gen=$myGeneration no voice found for locale=$desiredLocale " +
-                        "among ${allVoices.size} voices")
+                        "among ${allVoices.size} voices, relying on setLanguage only")
                 }
             }
         } catch (e: Exception) {
             Log.w(TAG, "gen=$myGeneration getVoices/setVoice failed: ${e.message}")
-        }
-
-        // --- Step 2: Fallback to setLanguage if setVoice didn't work ---
-        if (!voiceSet) {
-            val result = instance.setLanguage(desiredLocale)
-            Log.d(TAG, "gen=$myGeneration setLanguage($desiredLocale) result=$result (fallback)")
-
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                Log.e(TAG, "gen=$myGeneration language $desiredLocale not supported (result=$result), " +
-                    "engine will use its default")
-            }
         }
 
         // Log final state

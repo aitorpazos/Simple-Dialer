@@ -19,6 +19,7 @@ import com.simplemobiletools.dialer.databinding.ActivitySimulatedCallBinding
 import com.simplemobiletools.dialer.extensions.config
 import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.receivers.ActiveCallActionReceiver
+import com.simplemobiletools.dialer.services.TranscriptionService
 
 class SimulatedCallActivity : AppCompatActivity() {
     companion object {
@@ -126,14 +127,15 @@ class SimulatedCallActivity : AppCompatActivity() {
         }
 
         if (greeting.isNotEmpty()) {
+            // Start recording BEFORE greeting so the greeting itself is captured
+            startRecordingIfEnabled()
             handler.postDelayed({
                 greetingManager.playGreetingPreview(
                     greeting = greeting,
                     languageTag = languageTag,
                     engine = enginePkg
                 ) {
-                    // Start recording AFTER greeting finishes to avoid overlapping voices
-                    handler.post { startRecordingIfEnabled() }
+                    // Greeting finished — recording continues to capture silence/response
                 }
             }, 500)
         } else {
@@ -193,8 +195,28 @@ class SimulatedCallActivity : AppCompatActivity() {
             )
         }
 
-        // Close after a short delay
-        handler.postDelayed({ finish() }, 2000)
+        // Trigger transcription if recording exists and transcription is enabled
+        if (recordingResult != null && config.callTranscriptionEnabled) {
+            val transcriptionManager = TranscriptionManager(this)
+            val transcriptionUri = transcriptionManager.getRecordingUri(recordingResult!!)
+            if (transcriptionUri != null) {
+                try {
+                    val transcriptionIntent = TranscriptionService.createIntent(
+                        this, transcriptionUri, recordingResult!!.name
+                    )
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        startForegroundService(transcriptionIntent)
+                    } else {
+                        startService(transcriptionIntent)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        // Close after a short delay (longer to allow transcription service to start)
+        handler.postDelayed({ finish() }, 3000)
     }
 
     private fun enableSpeaker(on: Boolean) {
