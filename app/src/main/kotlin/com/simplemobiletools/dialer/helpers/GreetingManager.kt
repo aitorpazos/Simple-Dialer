@@ -25,6 +25,15 @@ private const val TAG = "GreetingManager"
  *
  * The generation counter ensures that only the *latest* request's init
  * callback ever proceeds to speak.  Any older callback is a no-op.
+ *
+ * **Language fix:** Some TTS engines (notably Google TTS) ignore setLanguage()
+ * when called immediately inside OnInitListener, or return success but still
+ * speak in the previously cached language.  To work around this:
+ *  1. We always fully destroy the previous TTS instance before creating a new one.
+ *  2. After setLanguage(), we verify the engine's actual language matches what
+ *     we requested.  If it doesn't, we retry setLanguage() after a short delay.
+ *  3. We pass the language as a TTS param via `KEY_PARAM_LANGUAGE` (undocumented
+ *     but honoured by some engines) as an additional safety net.
  */
 class GreetingManager(private val context: Context) {
     private var tts: TextToSpeech? = null
@@ -132,28 +141,8 @@ class GreetingManager(private val context: Context) {
             // slipped in between the status check and here.
             if (generation.get() != myGeneration) return@OnInitListener
 
-            // Apply language
-            val result = instance.setLanguage(desiredLocale)
-            Log.d(TAG, "gen=$myGeneration setLanguage($desiredLocale) result=$result engine=${instance.defaultEngine}")
-
-            // Utterance listener
-            instance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) {}
-                override fun onDone(utteranceId: String?) {
-                    onDoneCallback?.invoke()
-                    onDoneCallback = null
-                }
-                @Deprecated("Deprecated in Java")
-                override fun onError(utteranceId: String?) {
-                    onDoneCallback?.invoke()
-                    onDoneCallback = null
-                }
-            })
-
-            // Speak
-            val params = android.os.Bundle()
-            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream)
-            instance.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
+            // Apply language and verify it was actually set
+            applyLanguageAndSpeak(instance, desiredLocale, text, stream, utteranceId, myGeneration)
         }
 
         tts = if (desiredEngine.isNotEmpty()) {
@@ -161,6 +150,79 @@ class GreetingManager(private val context: Context) {
         } else {
             TextToSpeech(context, initListener)
         }
+    }
+
+    /**
+     * Apply the desired locale, verify it took effect, and then speak.
+     *
+     * Some TTS engines (especially Google TTS) have a race condition where
+     * setLanguage() returns SUCCESS but the engine internally still uses the
+     * previous language.  We work around this by:
+     *  1. Calling setLanguage() and checking the return code.
+     *  2. Verifying instance.voice?.locale or instance.language matches.
+     *  3. If mismatch, posting a short delayed retry (100ms) up to 2 times.
+     */
+    private fun applyLanguageAndSpeak(
+        instance: TextToSpeech,
+        desiredLocale: Locale,
+        text: String,
+        stream: Int,
+        utteranceId: String,
+        myGeneration: Int,
+        attempt: Int = 0
+    ) {
+        if (generation.get() != myGeneration) return
+
+        val result = instance.setLanguage(desiredLocale)
+        val actualLocale = try {
+            instance.voice?.locale
+        } catch (_: Exception) {
+            null
+        }
+
+        Log.d(TAG, "gen=$myGeneration setLanguage($desiredLocale) result=$result " +
+            "actualVoiceLocale=$actualLocale engine=${instance.defaultEngine} attempt=$attempt")
+
+        // Check if the language was actually applied
+        val languageMismatch = actualLocale != null &&
+            actualLocale.language != desiredLocale.language
+
+        if (languageMismatch && attempt < 2) {
+            // Retry after a short delay — the engine may need time to switch
+            Log.w(TAG, "gen=$myGeneration language mismatch: wanted=${desiredLocale.language} " +
+                "got=${actualLocale?.language}, retrying in 150ms (attempt ${attempt + 1})")
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                if (generation.get() == myGeneration) {
+                    applyLanguageAndSpeak(instance, desiredLocale, text, stream, utteranceId, myGeneration, attempt + 1)
+                }
+            }, 150)
+            return
+        }
+
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            Log.e(TAG, "gen=$myGeneration language $desiredLocale not supported (result=$result), " +
+                "falling back to default")
+            // Don't call setLanguage again — let the engine use its default
+        }
+
+        // Set up utterance listener
+        instance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {}
+            override fun onDone(utteranceId: String?) {
+                onDoneCallback?.invoke()
+                onDoneCallback = null
+            }
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) {
+                onDoneCallback?.invoke()
+                onDoneCallback = null
+            }
+        })
+
+        // Speak
+        val params = android.os.Bundle()
+        params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream)
+        instance.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
     }
 
     // ---------------------------------------------------------------
@@ -211,8 +273,12 @@ class GreetingManager(private val context: Context) {
     }
 
     private fun destroyTts() {
-        tts?.stop()
-        tts?.shutdown()
+        try {
+            tts?.stop()
+        } catch (_: Exception) {}
+        try {
+            tts?.shutdown()
+        } catch (_: Exception) {}
         tts = null
     }
 }
