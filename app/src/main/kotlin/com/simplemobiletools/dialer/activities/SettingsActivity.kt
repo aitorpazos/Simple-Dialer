@@ -128,6 +128,12 @@ class SettingsActivity : SimpleActivity() {
         setupSimulateCall()
         updateTextColors(binding.settingsHolder)
 
+        // Show version string
+        try {
+            val pInfo = packageManager.getPackageInfo(packageName, 0)
+            binding.settingsVersion.text = "Simple Dialer v${pInfo.versionName}"
+        } catch (_: Exception) {}
+
         binding.apply {
             arrayOf(
                 settingsColorCustomizationSectionLabel,
