@@ -20,9 +20,9 @@ class CallSummaryActionReceiver : BroadcastReceiver() {
         when (intent.action) {
             ACTION_PLAY_RECORDING -> playRecording(context, recordingUri)
             ACTION_SHARE_RECORDING -> shareRecording(context, recordingUri, recordingName)
-            ACTION_SHARE_TRANSCRIPTION -> shareTranscription(context, contactName)
+            ACTION_SHARE_TRANSCRIPTION -> shareTranscription(context, recordingName, contactName)
             ACTION_SHARE_CHOOSER -> showShareChooser(context, recordingUri, recordingName, contactName)
-            ACTION_SHOW_TRANSCRIPTION -> showTranscription(context, contactName)
+            ACTION_SHOW_TRANSCRIPTION -> showTranscription(context, recordingName, contactName)
         }
 
         // Dismiss the notification
@@ -72,24 +72,79 @@ class CallSummaryActionReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun shareTranscription(context: Context, contactName: String) {
-        // Transcription is a placeholder — for now show a toast
-        Toast.makeText(context, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
-    }
+    private fun shareTranscription(context: Context, recordingName: String?, contactName: String) {
+        if (recordingName == null) {
+            Toast.makeText(context, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
+            return
+        }
 
-    private fun showShareChooser(context: Context, recordingUri: Uri?, recordingName: String?, contactName: String) {
-        // Show a chooser dialog where user can pick sharing the recording or transcription
-        // Since we can't show a dialog from a BroadcastReceiver easily, we launch an activity
-        // For now, share the recording directly (transcription can be added later)
-        if (recordingUri != null) {
-            shareRecording(context, recordingUri, recordingName)
-        } else {
-            shareTranscription(context, contactName)
+        val transcriptionManager = TranscriptionManager(context)
+        val text = transcriptionManager.loadTranscription(recordingName)
+
+        if (text.isNullOrBlank()) {
+            Toast.makeText(context, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val subject = if (contactName.isNotEmpty()) {
+                context.getString(R.string.transcription_share_subject, contactName)
+            } else {
+                context.getString(R.string.transcription_share_subject_generic)
+            }
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, subject)
+                putExtra(Intent.EXTRA_TEXT, text)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val chooser = Intent.createChooser(shareIntent, context.getString(R.string.share_transcription))
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(chooser)
+        } catch (e: Exception) {
+            Toast.makeText(context, R.string.share_failed, Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun showTranscription(context: Context, contactName: String) {
-        // Transcription is a placeholder — for now show a toast
-        Toast.makeText(context, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
+    private fun showShareChooser(context: Context, recordingUri: Uri?, recordingName: String?, contactName: String) {
+        // Share the recording directly (transcription can be shared via separate action)
+        if (recordingUri != null) {
+            shareRecording(context, recordingUri, recordingName)
+        } else {
+            shareTranscription(context, recordingName, contactName)
+        }
+    }
+
+    private fun showTranscription(context: Context, recordingName: String?, contactName: String) {
+        if (recordingName == null) {
+            Toast.makeText(context, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val transcriptionManager = TranscriptionManager(context)
+        val text = transcriptionManager.loadTranscription(recordingName)
+
+        if (text.isNullOrBlank()) {
+            Toast.makeText(context, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Show transcription in a dialog via an activity (can't show dialog from receiver)
+        // Use a simple alert dialog activity
+        try {
+            val viewIntent = Intent(context, com.simplemobiletools.dialer.activities.TranscriptionViewActivity::class.java).apply {
+                putExtra(EXTRA_CONTACT_NAME, contactName)
+                putExtra(EXTRA_RECORDING_NAME, recordingName)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(viewIntent)
+        } catch (e: Exception) {
+            // Fallback: copy to clipboard and show toast
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("Call Transcription", text)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(context, R.string.transcription_copied_to_clipboard, Toast.LENGTH_LONG).show()
+        }
     }
 }

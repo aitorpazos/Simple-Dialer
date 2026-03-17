@@ -83,6 +83,9 @@ const val LISTEN_IN_MODE = "listen_in_mode"
 const val TTS_ENGINE = "tts_engine"
 const val TTS_LANGUAGE = "tts_language"
 
+// Transcription settings
+const val CALL_TRANSCRIPTION_ENABLED = "call_transcription_enabled"
+
 // Per-SIM auto-answer settings (stored as JSON map keyed by SIM id)
 const val PER_SIM_SETTINGS = "per_sim_settings"
 

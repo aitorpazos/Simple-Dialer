@@ -115,6 +115,7 @@ class SettingsActivity : SimpleActivity() {
         setupCallsImport()
         setupCallRecording()
         setupCallRecordingPath()
+        setupCallTranscription()
         setupNotificationActions()
         setupAutoAnswer()
         setupAutoAnswerGreeting()
@@ -383,8 +384,24 @@ class SettingsActivity : SimpleActivity() {
             settingsCallRecordingHolder.setOnClickListener {
                 settingsCallRecording.toggle()
                 config.callRecordingEnabled = settingsCallRecording.isChecked
+                updateCallTranscriptionVisibility()
             }
         }
+    }
+
+    private fun setupCallTranscription() {
+        binding.apply {
+            settingsCallTranscription.isChecked = config.callTranscriptionEnabled
+            settingsCallTranscriptionHolder.setOnClickListener {
+                settingsCallTranscription.toggle()
+                config.callTranscriptionEnabled = settingsCallTranscription.isChecked
+            }
+        }
+        updateCallTranscriptionVisibility()
+    }
+
+    private fun updateCallTranscriptionVisibility() {
+        binding.settingsCallTranscriptionHolder.beVisibleIf(config.callRecordingEnabled)
     }
 
     private fun setupAutoAnswer() {

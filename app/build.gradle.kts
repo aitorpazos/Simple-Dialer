@@ -90,5 +90,8 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.documentfile)
 
+    // Vosk offline speech recognition for call transcription
+    implementation("com.alphacephei:vosk-android:0.3.47")
+
     testImplementation("junit:junit:4.13.2")
 }

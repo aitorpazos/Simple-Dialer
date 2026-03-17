@@ -124,6 +124,23 @@
     <string name="no_app_to_play_recording">No app found to play recording</string>
     <string name="share_failed">Could not share</string>
     <string name="transcription_not_available">Transcription not available yet</string>
+    <string name="transcription_in_progress">Transcribing call…</string>
+    <string name="transcription_downloading_model">Downloading speech model…</string>
+    <string name="transcription_downloading_model_progress">Downloading speech model… %d%%</string>
+    <string name="transcription_decoding_audio">Decoding audio…</string>
+    <string name="transcription_notification_title">Call Transcription</string>
+    <string name="transcription_channel_name">Call Transcription</string>
+    <string name="transcription_channel_description">Notifications for ongoing call transcription</string>
+    <string name="transcription_empty">[No speech detected]</string>
+    <string name="transcription_copied_to_clipboard">Transcription copied to clipboard</string>
+    <string name="transcription_share_subject">Call transcription — %s</string>
+    <string name="transcription_share_subject_generic">Call transcription</string>
+    <string name="share_transcription">Share transcription</string>
+    <string name="transcription_dialog_title">Transcription — %s</string>
+    <string name="transcription_dialog_title_generic">Call Transcription</string>
+    <string name="copy_text">Copy</string>
+    <string name="call_transcription">Call transcription</string>
+    <string name="call_transcription_summary">Automatically transcribe recorded calls using offline speech recognition. Downloads a speech model (~50 MB) on first use.</string>
 
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>
