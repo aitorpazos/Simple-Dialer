@@ -710,6 +710,17 @@
                     android:text="@string/import_call_history" />
 
             </RelativeLayout>
+
+            <com.simplemobiletools.commons.views.MyTextView
+                android:id="@+id/settings_version"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingTop="24dp"
+                android:paddingBottom="16dp"
+                android:textColor="@android:color/darker_gray"
+                android:textSize="12sp" />
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
