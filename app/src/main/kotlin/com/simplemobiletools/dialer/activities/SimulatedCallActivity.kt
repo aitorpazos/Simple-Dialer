@@ -131,13 +131,14 @@ class SimulatedCallActivity : AppCompatActivity() {
                     greeting = greeting,
                     languageTag = languageTag,
                     engine = enginePkg
-                )
+                ) {
+                    // Start recording AFTER greeting finishes to avoid overlapping voices
+                    handler.post { startRecordingIfEnabled() }
+                }
             }, 500)
-        }
-
-        // Start recording if enabled
-        if (config.callRecordingEnabled) {
-            callRecordingManager.startRecording("simulated")
+        } else {
+            // No greeting — start recording immediately
+            startRecordingIfEnabled()
         }
 
         // Handle listen-in
@@ -199,6 +200,13 @@ class SimulatedCallActivity : AppCompatActivity() {
     private fun enableSpeaker(on: Boolean) {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         audioManager.isSpeakerphoneOn = on
+    }
+
+    private fun startRecordingIfEnabled() {
+        if (state != State.ACTIVE) return
+        if (config.callRecordingEnabled) {
+            callRecordingManager.startRecording("simulated")
+        }
     }
 
     // ---- Listen-in notification (mirrors CallService) ----
