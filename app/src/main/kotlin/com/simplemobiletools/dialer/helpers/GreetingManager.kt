@@ -246,15 +246,18 @@ class GreetingManager(private val context: Context) {
                     Log.d(TAG, "gen=$myGeneration setVoice(${match.name}, locale=${match.locale}) " +
                         "result=$setResult voiceSet=$voiceSet")
 
-                    // If setVoice succeeded, call setLanguage AGAIN to ensure
-                    // request.language matches the voice we just set.
-                    // Some engines use request.language as the primary signal,
-                    // and setVoice() may have changed the framework's internal
-                    // language state to the voice's locale (which could differ
-                    // slightly from desiredLocale).
-                    if (voiceSet) {
-                        instance.setLanguage(desiredLocale)
-                    }
+                    // DO NOT call setLanguage() again after setVoice() succeeds!
+                    // The Android TTS framework's setLanguage() implementation:
+                    //   1. Calls getDefaultVoiceNameFor() to get a voice name
+                    //   2. Calls loadVoice() with that name
+                    //   3. Calls getVoice() to verify
+                    //   4. If getVoice() returns null → returns LANG_NOT_SUPPORTED
+                    //      and RESETS mCurrentVoiceName to the previous (system default)
+                    // This means calling setLanguage() after setVoice() can UNDO
+                    // the successful voice selection, causing the engine to receive
+                    // the system default voice name instead of the one we just set.
+                    // The voice name set by setVoice() already encodes the correct
+                    // language (e.g. "es_ES-davefx-medium" → Spanish/Spain).
                 } else {
                     Log.w(TAG, "gen=$myGeneration no voice found for locale=$desiredLocale " +
                         "among ${allVoices.size} voices, relying on setLanguage only")
@@ -415,9 +418,8 @@ class GreetingManager(private val context: Context) {
                         }
                         if (match != null) {
                             inst.setVoice(match)
-                            // Re-apply setLanguage after setVoice to ensure
-                            // request.language is correct (some engines check this)
-                            inst.setLanguage(desiredLocale)
+                            // DO NOT call setLanguage() after setVoice() — it can
+                            // undo the voice selection (see applyLanguageAndSpeak comment)
                         }
                     }
                 } catch (_: Exception) {}
