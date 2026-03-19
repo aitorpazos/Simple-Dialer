@@ -285,9 +285,22 @@ class GreetingManager(private val context: Context) {
             }
         })
 
-        // Speak
+        // Speak — pass desired language directly in params Bundle.
+        // This uses a custom protocol with Piper TTS that bypasses the
+        // Android framework's unreliable voice/language state management.
+        // The keys are: piper_language (2-letter), piper_country (2-letter),
+        // piper_voice_name (optional exact voice name).
         val params = android.os.Bundle()
         params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, stream)
+        // Direct language override for Piper TTS
+        params.putString("piper_language", desiredLocale.language)
+        if (desiredLocale.country.isNotEmpty()) {
+            params.putString("piper_country", desiredLocale.country)
+        }
+        val finalVoiceName = try { instance.voice?.name } catch (_: Exception) { null }
+        if (finalVoiceName != null) {
+            params.putString("piper_voice_name", finalVoiceName)
+        }
         instance.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
     }
 
@@ -423,6 +436,15 @@ class GreetingManager(private val context: Context) {
                 })
 
                 val params = android.os.Bundle()
+                // Direct language override for Piper TTS (same as speak path)
+                params.putString("piper_language", desiredLocale.language)
+                if (desiredLocale.country.isNotEmpty()) {
+                    params.putString("piper_country", desiredLocale.country)
+                }
+                val synthVoiceName = try { inst.voice?.name } catch (_: Exception) { null }
+                if (synthVoiceName != null) {
+                    params.putString("piper_voice_name", synthVoiceName)
+                }
                 inst.synthesizeToFile(text, params, outputFile, "synth_to_file_$myGeneration")
             }, 300)
         }
