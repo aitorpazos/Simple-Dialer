@@ -2,6 +2,8 @@
 
 <img alt="Logo" src="graphics/icon.png" width="120" />
 
+> ⚠️ **Personal fork** — This is a personal fork meant for my own use. It may contain opinionated changes, experimental features, or breaking modifications. You're welcome to use it or fork it, but don't expect support or stability guarantees.
+
 A feature-rich phone dialer for Android with **call recording**, **auto-answer with TTS greeting**, **offline call transcription**, and more. Fork of [Simple Mobile Tools Dialer](https://github.com/SimpleMobileTools/Simple-Dialer) with significant added functionality.
 
 ## ✨ Features
