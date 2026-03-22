@@ -81,5 +81,5 @@
         Haven't found some strings? There's more at
         https://github.com/SimpleMobileTools/Simple-Commons/tree/master/commons/src/main/res
     -->
-    <string name="sim_engine">TTS-motor för SIM %d</string>
+    <string name="sim_engine">TTS-motor för SIM %s</string>
 </resources>

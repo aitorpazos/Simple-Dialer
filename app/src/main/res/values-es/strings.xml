@@ -156,9 +156,9 @@
     <!-- Per-SIM Settings -->
     <string name="per_sim_settings">Ajustes de respuesta automática por SIM</string>
     <string name="per_sim_settings_summary">Configurar motor, idioma y saludo por tarjeta SIM</string>
-    <string name="sim_engine">Motor TTS para SIM %d</string>
-    <string name="sim_greeting">Saludo para SIM %d</string>
-    <string name="sim_language">Idioma para SIM %d</string>
+    <string name="sim_engine">Motor TTS para SIM %s</string>
+    <string name="sim_greeting">Saludo para SIM %s</string>
+    <string name="sim_language">Idioma para SIM %s</string>
     <string name="sim_greeting_hint">Saludo personalizado para esta SIM (dejar vacío para usar el global)</string>
     <string name="sim_settings_title">SIM %d — %s</string>
     <string name="sim_settings_configured">Configurado</string>

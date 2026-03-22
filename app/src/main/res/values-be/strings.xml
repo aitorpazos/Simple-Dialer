@@ -157,9 +157,9 @@
     <!-- Per-SIM Settings -->
     <string name="per_sim_settings">Налады аўтаадказу для кожнай SIM</string>
     <string name="per_sim_settings_summary">Наладзьце рухавік, мову і прывітанне для кожнай SIM-карты</string>
-    <string name="sim_engine">Рухавік TTS для SIM %d</string>
-    <string name="sim_greeting">Прывітанне для SIM %d</string>
-    <string name="sim_language">Мова для SIM %d</string>
+    <string name="sim_engine">Рухавік TTS для SIM %s</string>
+    <string name="sim_greeting">Прывітанне для SIM %s</string>
+    <string name="sim_language">Мова для SIM %s</string>
     <string name="sim_greeting_hint">Уласнае прывітанне для гэтай SIM (пакіньце пустым для глабальнага)</string>
     <string name="sim_settings_title">SIM %d — %s</string>
     <string name="sim_settings_configured">Наладжана</string>

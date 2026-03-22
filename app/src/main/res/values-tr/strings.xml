@@ -127,5 +127,5 @@
         Bazı dizeleri bulamadınız mı? Burada daha fazlası var:
         https://github.com/SimpleMobileTools/Simple-Commons/tree/master/commons/src/main/res
     -->
-    <string name="sim_engine">SIM %d için TTS motoru</string>
+    <string name="sim_engine">SIM %s için TTS motoru</string>
 </resources>

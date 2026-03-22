@@ -905,6 +905,7 @@ class SettingsActivity : SimpleActivity() {
     private fun showPerSimDialog(simId: Int, simLabel: String, valueView: com.simplemobiletools.commons.views.MyTextView) {
         val simIdStr = simId.toString()
         val currentSettings = config.getSimSettings(simIdStr)
+        val displayLabel = getSIMDisplayLabel(simId)
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -913,7 +914,7 @@ class SettingsActivity : SimpleActivity() {
 
         // TTS Engine selector
         val engineLabel = android.widget.TextView(this).apply {
-            text = getString(R.string.sim_engine, simId)
+            text = getString(R.string.sim_engine, displayLabel)
             setTextAppearance(android.R.style.TextAppearance_Material_Body1)
             setPadding(0, 10, 0, 5)
         }
@@ -937,7 +938,7 @@ class SettingsActivity : SimpleActivity() {
 
         // Language selector
         val languageLabel = android.widget.TextView(this).apply {
-            text = getString(R.string.sim_language, simId)
+            text = getString(R.string.sim_language, displayLabel)
             setTextAppearance(android.R.style.TextAppearance_Material_Body1)
             setPadding(0, 10, 0, 5)
         }
@@ -959,7 +960,7 @@ class SettingsActivity : SimpleActivity() {
 
         // Greeting editor
         val greetingLabel = android.widget.TextView(this).apply {
-            text = getString(R.string.sim_greeting, simId)
+            text = getString(R.string.sim_greeting, displayLabel)
             setTextAppearance(android.R.style.TextAppearance_Material_Body1)
             setPadding(0, 20, 0, 5)
         }
@@ -973,7 +974,7 @@ class SettingsActivity : SimpleActivity() {
         layout.addView(greetingEdit)
 
         AlertDialog.Builder(this)
-            .setTitle(getString(R.string.sim_settings_title, simId, simLabel))
+            .setTitle(getString(R.string.sim_settings_title, simId, displayLabel))
             .setView(layout)
             .setPositiveButton(R.string.ok) { _, _ ->
                 val newSettings = SimAutoAnswerSettings(

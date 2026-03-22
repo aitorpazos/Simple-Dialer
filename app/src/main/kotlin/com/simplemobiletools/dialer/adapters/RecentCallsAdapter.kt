@@ -64,6 +64,10 @@ class RecentCallsAdapter(
         menu.apply {
             findItem(R.id.cab_call_sim_1).isVisible = hasMultipleSIMs && isOneItemSelected
             findItem(R.id.cab_call_sim_2).isVisible = hasMultipleSIMs && isOneItemSelected
+            if (hasMultipleSIMs) {
+                findItem(R.id.cab_call_sim_1).title = activity.getString(R.string.call_from_sim, activity.getSIMDisplayLabel(1))
+                findItem(R.id.cab_call_sim_2).title = activity.getString(R.string.call_from_sim, activity.getSIMDisplayLabel(2))
+            }
             findItem(R.id.cab_remove_default_sim).isVisible = isOneItemSelected && (activity.config.getCustomSIM(selectedNumber) ?: "") != ""
 
             findItem(R.id.cab_block_number).title = activity.addLockedLabelIfNeeded(R.string.block_number)
@@ -436,6 +440,9 @@ class RecentCallsAdapter(
                 itemRecentsSimImage.applyColorFilter(textColor)
                 itemRecentsSimId.setTextColor(textColor.getContrastColor())
                 itemRecentsSimId.text = call.simID.toString()
+                val simLabel = root.context.getSIMDisplayLabel(call.simID)
+                itemRecentsSimImage.contentDescription = simLabel
+                itemRecentsSimId.contentDescription = simLabel
             }
 
             SimpleContactsHelper(root.context).loadContactImage(call.photoUri, itemRecentsImage, call.name)
@@ -473,6 +480,10 @@ class RecentCallsAdapter(
                 findItem(R.id.cab_call).isVisible = !areMultipleSIMsAvailable && !call.isUnknownNumber
                 findItem(R.id.cab_call_sim_1).isVisible = areMultipleSIMsAvailable && !call.isUnknownNumber
                 findItem(R.id.cab_call_sim_2).isVisible = areMultipleSIMsAvailable && !call.isUnknownNumber
+                if (areMultipleSIMsAvailable) {
+                    findItem(R.id.cab_call_sim_1).title = activity.getString(R.string.call_from_sim, activity.getSIMDisplayLabel(1))
+                    findItem(R.id.cab_call_sim_2).title = activity.getString(R.string.call_from_sim, activity.getSIMDisplayLabel(2))
+                }
                 findItem(R.id.cab_send_sms).isVisible = !call.isUnknownNumber
                 findItem(R.id.cab_view_details).isVisible = contact != null && !call.isUnknownNumber
                 findItem(R.id.cab_add_number).isVisible = !call.isUnknownNumber

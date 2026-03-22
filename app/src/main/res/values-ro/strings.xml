@@ -83,5 +83,5 @@
         Haven't found some strings? There's more at
         https://github.com/SimpleMobileTools/Simple-Commons/tree/master/commons/src/main/res
     -->
-    <string name="sim_engine">Motor TTS pentru SIM %d</string>
+    <string name="sim_engine">Motor TTS pentru SIM %s</string>
 </resources>

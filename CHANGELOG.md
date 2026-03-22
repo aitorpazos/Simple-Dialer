@@ -1,6 +1,16 @@
 Changelog
 ==========
 
+Version 5.36.0 *(2026-03-22)*
+----------------------------
+
+ * Show SIM card carrier name and phone number throughout the UI instead of just "SIM 1"/"SIM 2"
+ * Call screen now displays the full SIM label (e.g. "Vodafone (+34612345678)")
+ * Context menus show "Call from Vodafone (+34612345678)" instead of generic "Call from SIM 1"
+ * Per-SIM settings dialogs now reference SIMs by carrier name and phone number
+ * Recent calls SIM badge shows accessibility label with full SIM info
+ * Updated all translations (43 locales) with new SIM label format strings
+
 Version 5.34.0 *(2026-03-22)*
 ----------------------------
 

@@ -243,6 +243,7 @@ class CallActivity : SimpleActivity() {
         }
 
         callSimId.setTextColor(getProperTextColor().getContrastColor())
+        callSimLabel.setTextColor(getProperTextColor())
         dialpadInput.disableKeyboard()
 
         dialpadWrapper.onGlobalLayout {
@@ -588,10 +589,13 @@ class CallActivity : SimpleActivity() {
             if (accounts.size > 1) {
                 accounts.forEachIndexed { index, account ->
                     if (account == CallManager.getPrimaryCall()?.details?.accountHandle) {
+                        val simId = index + 1
                         binding.apply {
-                            callSimId.text = "${index + 1}"
+                            callSimId.text = "$simId"
                             callSimId.beVisible()
                             callSimImage.beVisible()
+                            callSimLabel.text = getSIMDisplayLabel(simId)
+                            callSimLabel.beVisible()
                         }
 
                         val acceptDrawableId = when (index) {

@@ -44,3 +44,35 @@ fun Context.areMultipleSIMsAvailable(): Boolean {
         false
     }
 }
+
+/**
+ * Returns a user-friendly display label for a SIM card identified by its 1-based [simId].
+ * Prefers the carrier/account name with phone number, e.g. "Vodafone (+34612345678)".
+ * Falls back to "SIM 1", "SIM 2" etc. when no information is available.
+ */
+fun Context.getSIMDisplayLabel(simId: Int): String {
+    val accounts = getAvailableSIMCardLabels()
+    val sim = accounts.firstOrNull { it.id == simId }
+    return sim?.let { buildSIMDisplayLabel(it) } ?: "SIM $simId"
+}
+
+/**
+ * Returns a short display label for a SIM card, suitable for small UI elements (badges, chips).
+ * Shows the phone number if available, otherwise falls back to "SIM 1" etc.
+ */
+fun Context.getSIMShortLabel(simId: Int): String {
+    val accounts = getAvailableSIMCardLabels()
+    val sim = accounts.firstOrNull { it.id == simId }
+    if (sim != null && sim.phoneNumber.isNotEmpty()) {
+        return sim.phoneNumber
+    }
+    return "SIM $simId"
+}
+
+/**
+ * Builds a display label from a [SIMAccount]. Returns the carrier label (which already
+ * includes the phone number if available from [getAvailableSIMCardLabels]).
+ */
+private fun buildSIMDisplayLabel(sim: SIMAccount): String {
+    return sim.label.ifEmpty { "SIM ${sim.id}" }
+}

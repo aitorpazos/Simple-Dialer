@@ -33,6 +33,7 @@ import com.simplemobiletools.dialer.activities.SimpleActivity
 import com.simplemobiletools.dialer.extensions.areMultipleSIMsAvailable
 import com.simplemobiletools.dialer.extensions.callContactWithSim
 import com.simplemobiletools.dialer.extensions.config
+import com.simplemobiletools.dialer.extensions.getSIMDisplayLabel
 import com.simplemobiletools.dialer.extensions.startContactDetailsIntent
 import com.simplemobiletools.dialer.interfaces.RefreshItemsListener
 import java.util.*
@@ -88,6 +89,10 @@ class ContactsAdapter(
         menu.apply {
             findItem(R.id.cab_call_sim_1).isVisible = hasMultipleSIMs && isOneItemSelected
             findItem(R.id.cab_call_sim_2).isVisible = hasMultipleSIMs && isOneItemSelected
+            if (hasMultipleSIMs) {
+                findItem(R.id.cab_call_sim_1).title = activity.getString(R.string.call_from_sim, activity.getSIMDisplayLabel(1))
+                findItem(R.id.cab_call_sim_2).title = activity.getString(R.string.call_from_sim, activity.getSIMDisplayLabel(2))
+            }
             findItem(R.id.cab_remove_default_sim).isVisible = isOneItemSelected && (activity.config.getCustomSIM(selectedNumber) ?: "") != ""
 
             findItem(R.id.cab_delete).isVisible = showDeleteButton

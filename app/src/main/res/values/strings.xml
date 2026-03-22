@@ -41,6 +41,7 @@
     <string name="select_sim">Select a SIM for this call</string>
     <string name="always_use_this_sim">Always use this SIM for this number</string>
     <string name="unset_default_sim">Unset default SIM</string>
+    <string name="call_from_sim">Call from %s</string>
     <string name="calls">Calls</string>
     <string name="turn_microphone_on">Turn microphone on</string>
     <string name="turn_microphone_off">Turn microphone off</string>
@@ -219,9 +220,9 @@
     <!-- Per-SIM Settings -->
     <string name="per_sim_settings">Per-SIM auto-answer settings</string>
     <string name="per_sim_settings_summary">Configure engine, language and greeting per SIM card</string>
-    <string name="sim_engine">TTS engine for SIM %d</string>
-    <string name="sim_greeting">Greeting for SIM %d</string>
-    <string name="sim_language">Language for SIM %d</string>
+    <string name="sim_engine">TTS engine for %s</string>
+    <string name="sim_greeting">Greeting for %s</string>
+    <string name="sim_language">Language for %s</string>
     <string name="sim_greeting_hint">Custom greeting for this SIM (leave empty for global)</string>
     <string name="sim_global_settings">Global settings (no SIM override)</string>
     <string name="sim_settings_title">SIM %d — %s</string>
