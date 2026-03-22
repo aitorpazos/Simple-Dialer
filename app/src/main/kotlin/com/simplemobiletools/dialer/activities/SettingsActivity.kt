@@ -30,6 +30,7 @@ import com.simplemobiletools.dialer.extensions.getAvailableSIMCardLabels
 import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.models.RecentCall
 import com.simplemobiletools.dialer.models.SimAutoAnswerSettings
+import com.simplemobiletools.dialer.services.CallRecordingAccessibilityService
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -114,6 +115,7 @@ class SettingsActivity : SimpleActivity() {
         setupCallsExport()
         setupCallsImport()
         setupCallRecording()
+        setupAccessibilityService()
         setupCallRecordingPath()
         setupOpenRecordingsFolder()
         setupCallTranscription()
@@ -392,6 +394,29 @@ class SettingsActivity : SimpleActivity() {
                 settingsCallRecording.toggle()
                 config.callRecordingEnabled = settingsCallRecording.isChecked
                 updateCallTranscriptionVisibility()
+                updateAccessibilityServiceVisibility()
+            }
+        }
+    }
+
+    private fun setupAccessibilityService() {
+        updateAccessibilityServiceVisibility()
+        binding.settingsAccessibilityServiceHolder.setOnClickListener {
+            if (!CallRecordingAccessibilityService.isServiceEnabled(this)) {
+                CallRecordingAccessibilityService.openAccessibilitySettings(this)
+            }
+        }
+    }
+
+    private fun updateAccessibilityServiceVisibility() {
+        val recordingEnabled = config.callRecordingEnabled
+        binding.settingsAccessibilityServiceHolder.beVisibleIf(recordingEnabled)
+        if (recordingEnabled) {
+            val enabled = CallRecordingAccessibilityService.isServiceEnabled(this)
+            binding.settingsAccessibilityServiceStatus.text = if (enabled) {
+                getString(R.string.accessibility_service_enabled)
+            } else {
+                getString(R.string.accessibility_service_disabled)
             }
         }
     }
