@@ -873,7 +873,7 @@ class SettingsActivity : SimpleActivity() {
             }
 
             val labelView = com.simplemobiletools.commons.views.MyTextView(this).apply {
-                text = getString(R.string.sim_settings_title, sim.id, sim.label)
+                text = getString(R.string.sim_settings_title, sim.id, getSIMDisplayLabel(sim.id))
                 setTextAppearance(com.simplemobiletools.commons.R.style.SettingsTextLabelStyle)
                 id = android.view.View.generateViewId()
             }
@@ -1093,7 +1093,7 @@ class SettingsActivity : SimpleActivity() {
                     RadioItem(0, getString(R.string.sim_global_settings))
                 )
                 simAccounts.forEach { sim ->
-                    items.add(RadioItem(sim.id, getString(R.string.sim_settings_title, sim.id, sim.label)))
+                    items.add(RadioItem(sim.id, getString(R.string.sim_settings_title, sim.id, getSIMDisplayLabel(sim.id))))
                 }
 
                 RadioGroupDialog(this, items, 0) { selected ->

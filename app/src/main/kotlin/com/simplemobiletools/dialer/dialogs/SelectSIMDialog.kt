@@ -14,6 +14,7 @@ import com.simplemobiletools.dialer.R
 import com.simplemobiletools.dialer.databinding.DialogSelectSimBinding
 import com.simplemobiletools.dialer.extensions.config
 import com.simplemobiletools.dialer.extensions.getAvailableSIMCardLabels
+import com.simplemobiletools.dialer.extensions.getSIMDisplayLabel
 
 @SuppressLint("MissingPermission")
 class SelectSIMDialog(
@@ -31,8 +32,9 @@ class SelectSIMDialog(
         }
 
         activity.getAvailableSIMCardLabels().forEachIndexed { index, SIMAccount ->
+            val displayLabel = activity.getSIMDisplayLabel(SIMAccount.id)
             val radioButton = (activity.layoutInflater.inflate(R.layout.radio_button, null) as RadioButton).apply {
-                text = "${index + 1} - ${SIMAccount.label}"
+                text = "${index + 1} - $displayLabel"
                 id = index
                 setOnClickListener { selectedSIM(SIMAccount.handle) }
             }

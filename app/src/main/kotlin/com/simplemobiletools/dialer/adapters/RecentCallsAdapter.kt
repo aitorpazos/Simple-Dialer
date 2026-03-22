@@ -443,6 +443,7 @@ class RecentCallsAdapter(
                 val simLabel = root.context.getSIMDisplayLabel(call.simID)
                 itemRecentsSimImage.contentDescription = simLabel
                 itemRecentsSimId.contentDescription = simLabel
+                itemRecentsSimImage.tooltipText = simLabel
             }
 
             SimpleContactsHelper(root.context).loadContactImage(call.photoUri, itemRecentsImage, call.name)
