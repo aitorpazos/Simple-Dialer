@@ -9,25 +9,37 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.simplemobiletools.dialer.extensions.config
+import com.simplemobiletools.dialer.services.CallRecordingAccessibilityService
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Call recording manager with accessibility-service-aware audio source selection.
+ *
+ * On many Android devices (Android 9+), the VOICE_CALL audio source is blocked for
+ * third-party apps, resulting in files that have the correct duration but contain
+ * silence. When the user enables our AccessibilityService, several OEMs (Samsung,
+ * Xiaomi, OnePlus, Pixel, etc.) unlock the VOICE_CALL source for the default dialer,
+ * allowing reliable capture of both sides of the conversation.
+ *
+ * Audio source priority when accessibility service is enabled:
+ *   1. VOICE_CALL          — both sides, most reliable with accessibility
+ *   2. VOICE_COMMUNICATION — VoIP-style capture, works on some devices
+ *   3. VOICE_RECOGNITION   — high-quality mic, sometimes captures call audio
+ *   4. MIC                 — always works but only captures local side
+ *
+ * Without accessibility service (legacy fallback):
+ *   1. VOICE_CALL          — may work on some OEMs
+ *   2. MIC                 — guaranteed to work (local side only)
+ *   3. VOICE_COMMUNICATION — last resort
+ */
 class CallRecordingManager(private val context: Context) {
     companion object {
         private const val TAG = "CallRecordingManager"
 
-        /**
-         * Audio sources to try, in priority order:
-         * 1. VOICE_CALL — captures both sides (requires system-level permission, works on some OEMs)
-         * 2. MIC — physical microphone, always produces audible output
-         * 3. VOICE_COMMUNICATION — VoIP mic stream, often silent during phone calls
-         */
-        private val AUDIO_SOURCES = intArrayOf(
-            MediaRecorder.AudioSource.VOICE_CALL,
-            MediaRecorder.AudioSource.MIC,
-            MediaRecorder.AudioSource.VOICE_COMMUNICATION,
-        )
+        private const val SAMPLE_RATE = 44100
+        private const val BIT_RATE = 128000
     }
 
     private var mediaRecorder: MediaRecorder? = null
@@ -36,6 +48,7 @@ class CallRecordingManager(private val context: Context) {
     private var currentRecordingName: String? = null
     private var parcelFd: ParcelFileDescriptor? = null
     private var isRecording = false
+    private var activeAudioSource: String? = null
 
     private fun getDefaultRecordingsDir(): File {
         val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
@@ -55,12 +68,36 @@ class CallRecordingManager(private val context: Context) {
     }
 
     /**
-     * Try each audio source in [AUDIO_SOURCES] until one successfully starts.
-     * Configures output to the given file descriptor.
+     * Build the audio source priority list based on whether the accessibility
+     * service is currently enabled.
+     */
+    private fun getAudioSourcePriority(): List<Pair<Int, String>> {
+        val accessibilityEnabled = CallRecordingAccessibilityService.isServiceEnabled(context)
+
+        return if (accessibilityEnabled) {
+            listOf(
+                MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
+                MediaRecorder.AudioSource.VOICE_RECOGNITION to "VOICE_RECOGNITION",
+                MediaRecorder.AudioSource.MIC to "MIC",
+            )
+        } else {
+            listOf(
+                MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
+                MediaRecorder.AudioSource.MIC to "MIC",
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
+            )
+        }
+    }
+
+    /**
+     * Try each audio source in priority order until one successfully starts.
      */
     private fun startWithFallbackChain(configureOutput: (MediaRecorder) -> Unit): Boolean {
-        for (source in AUDIO_SOURCES) {
-            val sourceName = audioSourceName(source)
+        val sources = getAudioSourcePriority()
+        val accessibilityEnabled = CallRecordingAccessibilityService.isServiceEnabled(context)
+
+        for ((source, sourceName) in sources) {
             try {
                 mediaRecorder?.release()
                 mediaRecorder = createMediaRecorder()
@@ -69,14 +106,15 @@ class CallRecordingManager(private val context: Context) {
                     setAudioSource(source)
                     setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                     setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                    setAudioSamplingRate(44100)
-                    setAudioEncodingBitRate(128000)
+                    setAudioSamplingRate(SAMPLE_RATE)
+                    setAudioEncodingBitRate(BIT_RATE)
                     configureOutput(this)
                     prepare()
                     start()
                 }
 
-                Log.i(TAG, "Recording started with audio source: $sourceName")
+                activeAudioSource = sourceName
+                Log.i(TAG, "Recording started — source=$sourceName, accessibility=$accessibilityEnabled")
                 return true
             } catch (e: Exception) {
                 Log.w(TAG, "Audio source $sourceName failed: ${e.message}")
@@ -85,15 +123,8 @@ class CallRecordingManager(private val context: Context) {
             }
         }
 
-        Log.e(TAG, "All audio sources failed — cannot record")
+        Log.e(TAG, "All audio sources failed — cannot record (accessibility=$accessibilityEnabled)")
         return false
-    }
-
-    private fun audioSourceName(source: Int): String = when (source) {
-        MediaRecorder.AudioSource.VOICE_CALL -> "VOICE_CALL"
-        MediaRecorder.AudioSource.MIC -> "MIC"
-        MediaRecorder.AudioSource.VOICE_COMMUNICATION -> "VOICE_COMMUNICATION"
-        else -> "UNKNOWN($source)"
     }
 
     fun startRecording(phoneNumber: String): Boolean {
@@ -124,7 +155,6 @@ class CallRecordingManager(private val context: Context) {
                             isRecording = true
                             return true
                         } else {
-                            // Clean up SAF file on failure
                             try { parcelFd?.close() } catch (_: Exception) {}
                             try { newDoc.delete() } catch (_: Exception) {}
                             parcelFd = null
@@ -178,6 +208,7 @@ class CallRecordingManager(private val context: Context) {
             parcelFd?.close()
         } catch (_: Exception) {}
 
+        Log.i(TAG, "Recording stopped — source=$activeAudioSource, file=${name ?: "null"}")
         cleanup()
 
         if (name == null) return null
@@ -194,11 +225,18 @@ class CallRecordingManager(private val context: Context) {
         mediaRecorder = null
         parcelFd = null
         isRecording = false
+        activeAudioSource = null
     }
 
     fun isCurrentlyRecording() = isRecording
 
     fun getCurrentRecordingName() = currentRecordingName
+
+    /**
+     * Returns the audio source currently being used, or null if not recording.
+     * Useful for diagnostics.
+     */
+    fun getActiveAudioSource(): String? = activeAudioSource
 }
 
 data class RecordingResult(
