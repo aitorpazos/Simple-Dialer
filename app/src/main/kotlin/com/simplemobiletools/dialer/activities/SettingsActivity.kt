@@ -6,13 +6,18 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.speech.tts.TextToSpeech
+import android.telecom.TelecomManager
 import android.view.LayoutInflater
 import android.view.Menu
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.documentfile.provider.DocumentFile
 import com.simplemobiletools.commons.activities.ManageBlockedNumbersActivity
 import com.simplemobiletools.commons.dialogs.ChangeDateTimeFormatDialog
@@ -44,6 +49,15 @@ class SettingsActivity : SimpleActivity() {
 
     private val binding by viewBinding(ActivitySettingsBinding::inflate)
     private val greetingManager by lazy { GreetingManager(this) }
+
+    private val requestMicPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+        refreshSetupGuide()
+    }
+
+    private val requestNotificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+        refreshSetupGuide()
+    }
+
     private val getContent = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             toast(R.string.importing)
@@ -116,6 +130,7 @@ class SettingsActivity : SimpleActivity() {
         setupCallsImport()
         setupCallRecording()
         setupAccessibilityService()
+        setupRecordingSetupGuide()
         setupCallRecordingPath()
         setupOpenRecordingsFolder()
         setupCallTranscription()
@@ -395,6 +410,7 @@ class SettingsActivity : SimpleActivity() {
                 config.callRecordingEnabled = settingsCallRecording.isChecked
                 updateCallTranscriptionVisibility()
                 updateAccessibilityServiceVisibility()
+                refreshSetupGuide()
             }
         }
     }
@@ -409,14 +425,198 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun updateAccessibilityServiceVisibility() {
+        // Old single-item accessibility row is now hidden; replaced by the setup guide
+        binding.settingsAccessibilityServiceHolder.beVisibleIf(false)
+    }
+
+    // ---- Call Recording Setup Guide ----
+
+    private fun setupRecordingSetupGuide() {
+        refreshSetupGuide()
+
+        binding.settingsSetupDefaultDialerHolder.setOnClickListener {
+            launchSetDefaultDialer()
+        }
+
+        binding.settingsSetupMicrophoneHolder.setOnClickListener {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                requestMicPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+            }
+        }
+
+        binding.settingsSetupNotificationsHolder.setOnClickListener {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED
+                ) {
+                    requestNotificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        }
+
+        binding.settingsSetupRestrictedHolder.setOnClickListener {
+            try {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+                startActivity(intent)
+            } catch (_: Exception) {
+                toast(R.string.setup_restricted_settings_hint)
+            }
+        }
+
+        binding.settingsSetupAccessibilityHolder.setOnClickListener {
+            if (!CallRecordingAccessibilityService.isServiceEnabled(this)) {
+                CallRecordingAccessibilityService.openAccessibilitySettings(this)
+            }
+        }
+
+        binding.settingsSetupBatteryHolder.setOnClickListener {
+            openBatteryOptimizationSettings()
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun launchSetDefaultDialer() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val roleManager = getSystemService(android.app.role.RoleManager::class.java)
+                if (roleManager != null && !roleManager.isRoleHeld(android.app.role.RoleManager.ROLE_DIALER)) {
+                    startActivity(roleManager.createRequestRoleIntent(android.app.role.RoleManager.ROLE_DIALER))
+                    return
+                }
+            }
+            val intent = Intent(TelecomManager.ACTION_CHANGE_DEFAULT_DIALER).apply {
+                putExtra(TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME, packageName)
+            }
+            startActivity(intent)
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun openBatteryOptimizationSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            startActivity(intent)
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun isDefaultDialer(): Boolean {
+        val telecomManager = getSystemService(TELECOM_SERVICE) as? TelecomManager
+        return telecomManager?.defaultDialerPackage == packageName
+    }
+
+    private fun hasMicrophonePermission(): Boolean {
+        return ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun hasNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            NotificationManagerCompat.from(this).areNotificationsEnabled()
+        }
+    }
+
+    private fun isBatteryOptimizationDisabled(): Boolean {
+        val pm = getSystemService(POWER_SERVICE) as? PowerManager
+        return pm?.isIgnoringBatteryOptimizations(packageName) == true
+    }
+
+    /**
+     * On Android 13+, apps installed from outside the Play Store need "Allow restricted settings"
+     * before the user can enable accessibility services. We show this step as guidance when
+     * accessibility is not yet enabled on Android 13+.
+     */
+    private fun needsRestrictedSettingsStep(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+        return !CallRecordingAccessibilityService.isServiceEnabled(this)
+    }
+
+    private fun refreshSetupGuide() {
         val recordingEnabled = config.callRecordingEnabled
-        binding.settingsAccessibilityServiceHolder.beVisibleIf(recordingEnabled)
-        if (recordingEnabled) {
-            val enabled = CallRecordingAccessibilityService.isServiceEnabled(this)
-            binding.settingsAccessibilityServiceStatus.text = if (enabled) {
-                getString(R.string.accessibility_service_enabled)
+
+        binding.apply {
+            val visible = recordingEnabled
+            settingsSetupGuideLabel.beVisibleIf(visible)
+            settingsSetupGuideStatus.beVisibleIf(visible)
+            settingsSetupDefaultDialerHolder.beVisibleIf(visible)
+            settingsSetupMicrophoneHolder.beVisibleIf(visible)
+            settingsSetupNotificationsHolder.beVisibleIf(visible)
+            settingsSetupRestrictedHolder.beVisibleIf(visible && needsRestrictedSettingsStep())
+            settingsSetupAccessibilityHolder.beVisibleIf(visible)
+            settingsSetupBatteryHolder.beVisibleIf(visible)
+
+            if (!visible) return
+
+            var pendingSteps = 0
+
+            // 1. Default dialer
+            val isDefault = isDefaultDialer()
+            settingsSetupDefaultDialerStatus.text = getString(
+                if (isDefault) R.string.setup_default_dialer_ok else R.string.setup_default_dialer_needed
+            )
+            settingsSetupDefaultDialerHolder.alpha = if (isDefault) 0.5f else 1.0f
+            if (!isDefault) pendingSteps++
+
+            // 2. Microphone
+            val hasMic = hasMicrophonePermission()
+            settingsSetupMicrophoneStatus.text = getString(
+                if (hasMic) R.string.setup_microphone_ok else R.string.setup_microphone_needed
+            )
+            settingsSetupMicrophoneHolder.alpha = if (hasMic) 0.5f else 1.0f
+            if (!hasMic) pendingSteps++
+
+            // 3. Notifications
+            val hasNotif = hasNotificationPermission()
+            settingsSetupNotificationsStatus.text = getString(
+                if (hasNotif) R.string.setup_notifications_ok else R.string.setup_notifications_needed
+            )
+            settingsSetupNotificationsHolder.alpha = if (hasNotif) 0.5f else 1.0f
+            if (!hasNotif) pendingSteps++
+
+            // 4. Restricted settings (Android 13+ only)
+            val needsRestricted = needsRestrictedSettingsStep()
+            if (needsRestricted) {
+                settingsSetupRestrictedStatus.text = getString(R.string.setup_restricted_settings_needed)
+                settingsSetupRestrictedHolder.alpha = 1.0f
+                pendingSteps++
+            }
+
+            // 5. Accessibility service
+            val hasAccessibility = CallRecordingAccessibilityService.isServiceEnabled(this@SettingsActivity)
+            settingsSetupAccessibilityStatus.text = getString(
+                if (hasAccessibility) R.string.setup_accessibility_ok else R.string.setup_accessibility_needed
+            )
+            settingsSetupAccessibilityHolder.alpha = if (hasAccessibility) 0.5f else 1.0f
+            if (!hasAccessibility) pendingSteps++
+
+            // 6. Battery optimization
+            val hasBattery = isBatteryOptimizationDisabled()
+            settingsSetupBatteryStatus.text = getString(
+                if (hasBattery) R.string.setup_battery_optimization_ok else R.string.setup_battery_optimization_needed
+            )
+            settingsSetupBatteryHolder.alpha = if (hasBattery) 0.5f else 1.0f
+            if (!hasBattery) pendingSteps++
+
+            // Overall status
+            settingsSetupGuideStatus.text = if (pendingSteps == 0) {
+                getString(R.string.setup_all_done)
             } else {
-                getString(R.string.accessibility_service_disabled)
+                getString(R.string.setup_action_needed, pendingSteps)
             }
         }
     }
