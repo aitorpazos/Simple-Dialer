@@ -424,7 +424,8 @@
                 android:id="@+id/settings_accessibility_service_holder"
                 style="@style/SettingsHolderTextViewStyle"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:visibility="gone">
 
                 <com.simplemobiletools.commons.views.MyTextView
                     android:id="@+id/settings_accessibility_service_label"
@@ -440,6 +441,175 @@
                     android:layout_height="wrap_content"
                     android:layout_below="@+id/settings_accessibility_service_label"
                     tools:text="Not enabled" />
+
+            </RelativeLayout>
+
+            <!-- Call Recording Setup Guide -->
+            <com.simplemobiletools.commons.views.MyTextView
+                android:id="@+id/settings_setup_guide_label"
+                style="@style/SettingsTextValueStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/big_margin"
+                android:paddingEnd="@dimen/big_margin"
+                android:paddingTop="@dimen/medium_margin"
+                android:paddingBottom="@dimen/small_margin"
+                android:textStyle="bold"
+                android:text="@string/call_recording_setup_guide"
+                android:visibility="gone" />
+
+            <com.simplemobiletools.commons.views.MyTextView
+                android:id="@+id/settings_setup_guide_status"
+                style="@style/SettingsTextValueStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="@dimen/big_margin"
+                android:paddingEnd="@dimen/big_margin"
+                android:paddingBottom="@dimen/medium_margin"
+                android:visibility="gone"
+                tools:text="⚠️ 3 step(s) remaining" />
+
+            <RelativeLayout
+                android:id="@+id/settings_setup_default_dialer_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_default_dialer_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setup_default_dialer" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_default_dialer_status"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_setup_default_dialer_label"
+                    tools:text="Tap to set as default" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/settings_setup_microphone_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_microphone_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setup_microphone" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_microphone_status"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_setup_microphone_label"
+                    tools:text="Tap to grant" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/settings_setup_notifications_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_notifications_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setup_notifications" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_notifications_status"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_setup_notifications_label"
+                    tools:text="Tap to allow" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/settings_setup_restricted_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_restricted_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setup_restricted_settings" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_restricted_status"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_setup_restricted_label"
+                    tools:text="Tap to open App Info" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/settings_setup_accessibility_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_accessibility_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setup_accessibility" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_accessibility_status"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_setup_accessibility_label"
+                    tools:text="Tap to enable" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
+                android:id="@+id/settings_setup_battery_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_battery_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/setup_battery_optimization" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_setup_battery_status"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_setup_battery_label"
+                    tools:text="Tap to disable" />
 
             </RelativeLayout>
 

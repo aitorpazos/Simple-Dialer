@@ -1,6 +1,62 @@
 Changelog
 ==========
 
+Version 5.34.0 *(2026-03-22)*
+----------------------------
+
+ * Prepared repository for public release
+ * Updated README with comprehensive feature documentation and setup guide
+ * Updated CONTRIBUTING guidelines
+ * Removed sensitive files from git history
+ * Updated CHANGELOG with full version history since fork
+
+Version 5.33.0 *(2026-03-22)*
+----------------------------
+
+ * Added accessibility service for reliable call audio capture on Android 9+
+ * Added step-by-step setup guide with 6 permission checks (default dialer, mic, notifications, restricted settings, accessibility, battery)
+ * Audio source fallback chain: VOICE_CALL → VOICE_COMMUNICATION → VOICE_RECOGNITION → MIC
+ * Fixed TTS voice reset when setLanguage() was called after setVoice()
+
+Version 5.30.0 *(2026-03-20)*
+----------------------------
+
+ * Added audio source fallback chain for call recording
+ * Improved TTS voice selection reliability in GreetingManager
+
+Version 5.29.0 *(2026-03-19)*
+----------------------------
+
+ * Added version string at bottom of Settings page
+
+Version 5.28.0 *(2026-03-18)*
+----------------------------
+
+ * Capture greeting audio for transcription on test calls
+ * Fixed TTS language selection and test call transcription
+ * Fixed TTS voice selection to use setVoice() instead of setLanguage()
+
+Version 5.27.0 *(2026-03-17)*
+----------------------------
+
+ * Fixed TTS language not applied consistently on subsequent uses
+
+Version 5.26.0 *(2026-03-16)*
+----------------------------
+
+ * Fixed recording to start after greeting finishes
+ * Show transcription progress indicator
+ * Added recordings folder shortcut in Settings
+ * Added recording/transcription actions in call history
+
+Version 5.25.0 *(2026-03-15)*
+----------------------------
+
+ * Added offline call transcription using Vosk STT
+ * Auto-downloads language model based on TTS language setting
+ * Transcription view with share/copy actions
+ * Fixed TTS engine/language race condition
+
 Version 5.23.0 *(2025-03-15)*
 ----------------------------
 

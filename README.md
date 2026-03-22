@@ -1,36 +1,112 @@
 # Simple Dialer
+
 <img alt="Logo" src="graphics/icon.png" width="120" />
 
-A lightweight app for handling your calls, no matter where are you. Comes with a handy call log for easy call initiation. You can now easily dial numbers using this amazing dial pad without any problem as this dial pad gives you different things to ease up your overall experience while making a call. Stay connected with your friends and family while having a smooth experience in this app. With bigger numbers and letters, it is now easier for you to see and dial numbers. Using this dialpad, you can access your contacts and maintain a call log with ease.
+A feature-rich phone dialer for Android with **call recording**, **auto-answer with TTS greeting**, **offline call transcription**, and more. Fork of [Simple Mobile Tools Dialer](https://github.com/SimpleMobileTools/Simple-Dialer) with significant added functionality.
 
-There is a quick dialpad at your service too, with smart contact suggestions. It supports letters too. You can use the quick search for finding your favorite contacts not just in the contact list, but also at the call history. Call log entries can be removed either one by one, but it can also be cleared out at once.
+## ✨ Features
 
-You can easily block phone numbers to avoid unwanted incoming calls. This feature is missing in most of the apps present on the store. Using this feature, you can choose who can call you. By this feature, the security of the user can be maintained easily by blocking numbers that are useless or threatening. You can block calls from not saved contacts too.
+### Core Dialer
+- 📞 Full-featured phone dialer with contacts, favorites, and call history
+- 🔢 T9 smart dialpad with contact suggestions
+- 🚫 Call blocking and number management
+- ⚡ Speed dial support
+- 🎨 Material Design with customizable colors and dark theme
 
-With advanced security features of this app, the numbers you type are tightly secured so you can have a seamless experience without worrying about your data going in wrong hands. Each of your phone number is safe with you. 
+### 🎙️ Call Recording
+- **Automatic call recording** — records all calls when enabled
+- **Accessibility service integration** — captures both sides of the conversation reliably on Android 9+ (Samsung, Xiaomi, OnePlus, Pixel, etc.)
+- **Audio source fallback chain** — tries `VOICE_CALL` → `VOICE_COMMUNICATION` → `VOICE_RECOGNITION` → `MIC` until one works
+- **Custom recording folder** — save recordings to any folder via SAF
+- **Step-by-step setup guide** — walks you through all required permissions
 
-Supported Speed dialing makes calling your favorite contacts with this true phone a breeze. You can make any phone number your favorite so you can quickly dial it. This way, you can easily make contacts with people without finding deep down in other numbers.
+### 🗣️ Auto-Answer
+- **Auto-answer modes** — all calls, unknown callers only, or disabled
+- **Custom TTS greeting** — configurable text-to-speech message for callers
+- **TTS engine & language selection** — pick any installed TTS engine and language
+- **Per-SIM settings** — different greeting, language, and TTS engine per SIM card
+- **Listen-in mode** — listen to auto-answered calls via speaker or notification toggle
+- **Greeting preview** — hear what callers will hear before going live
 
-To help you manage your calls quickly the phone number app also supports favorite contacts and creating shortcuts of any contact on the home screen.
+### 📝 Offline Call Transcription
+- **Vosk STT integration** — automatic offline speech-to-text after each call
+- **Auto language model download** — downloads the right Vosk model based on your TTS language
+- **View & share transcriptions** — from call history or post-call notification
 
-It comes with material design and dark theme by default, provides great user experience for easy usage. The lack of internet access gives you more privacy, security and stability than other apps.
+### 📋 Post-Call Notifications
+- Configurable notification actions: play recording, share, view transcription
+- Call summary notification after each call
 
-Contains no ads or unnecessary permissions. It is fully opensource, provides customizable colors. Keeping track of call logs for different phone number is also a plus point of this app.
+### 🧪 Testing
+- **Simulate Call** — test the full auto-answer + recording + transcription flow without a real call
+- Per-SIM simulation support
 
-<a href="https://f-droid.org/packages/com.simplemobiletools.dialer">Get it on F-Droid</a>
-
-Support us:  
-IBAN: SK4083300000002000965231  
-Bitcoin: 19Hc8A7sWGud8sP19VXDC5a5j28UyJfpyJ  
-Ethereum: 0xB7a2DD6f2408Bce77334655CF5E7639aE31feb30  
-Litecoin: LYACbHTKaM9ZubKQGxJ4NRyVy1gHUuztRP  
-Bitcoin Cash: qz6dvmhq5vzkcsypxpp2mnur30muxdah4gvulx3y85  
-Tether: 0x250f9cC32863E59b87037a14955Ed64F879653F0  
-<a href="https://paypal.me/SimpleMobileTools?country.x=SK&locale.x=en_US">PayPal</a>  
-<a href="https://www.patreon.com/tiborkaputa">Patreon</a>
+## 📱 Screenshots
 
 <div style="display:flex;">
 <img alt="App image" src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_en-US.jpeg" width="30%">
 <img alt="App image" src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_en-US.jpeg" width="30%">
 <img alt="App image" src="fastlane/metadata/android/en-US/images/phoneScreenshots/3_en-US.jpeg" width="30%">
 </div>
+
+## 🚀 Setup Guide (Call Recording)
+
+After installing, go to **Settings → Call Recording** and enable it. A setup guide will appear with 6 steps:
+
+1. **Set as default phone app** — required for call access
+2. **Grant microphone permission** — required for audio capture
+3. **Allow notifications** — for recording status and post-call actions
+4. **Allow restricted settings** (Android 13+) — required before enabling accessibility
+5. **Enable accessibility service** — unlocks `VOICE_CALL` audio source for both-side recording
+6. **Disable battery optimization** — prevents Android from killing the recording service
+
+Each step shows ✓ when complete and can be tapped to open the relevant system setting.
+
+## 🔧 Building
+
+### Prerequisites
+- Android Studio Hedgehog or later
+- JDK 17+
+- Android SDK 34
+
+### Build
+
+```bash
+# Debug build
+./gradlew assembleDebug
+
+# Release build (requires signing config)
+./gradlew assembleRelease
+```
+
+### Signing
+
+Copy `keystore.properties_sample` to `keystore.properties` and fill in your keystore details:
+
+```properties
+storePassword=your_store_password
+keyPassword=your_key_password
+keyAlias=your_alias
+storeFile=../path/to/your.keystore
+```
+
+## 📦 Download
+
+Check the [Releases](https://github.com/aitorpazos/Simple-Dialer/releases) page for the latest APK.
+
+> ⚠️ If upgrading from an older version with a different signing key, uninstall first.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feat/my-feature`)
+3. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, etc.)
+4. Submit a Pull Request
+
+## 📄 License
+
+Licensed under the [GNU General Public License v3.0](LICENSE).
+
+This is a fork of [Simple Mobile Tools Dialer](https://github.com/SimpleMobileTools/Simple-Dialer). Original work © Simple Mobile Tools, licensed under GPLv3.

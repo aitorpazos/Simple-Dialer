@@ -99,6 +99,37 @@
     <string name="accessibility_service_enabled">Accessibility service enabled ✓</string>
     <string name="accessibility_service_disabled">Accessibility service not enabled</string>
 
+    <!-- Call Recording Setup Guide -->
+    <string name="call_recording_setup_guide">Setup Guide</string>
+    <string name="call_recording_setup_guide_summary">Follow these steps to ensure call recording works reliably on your device</string>
+    <string name="setup_all_done">✅ All set! Call recording is fully configured.</string>
+    <string name="setup_action_needed">⚠️ %d step(s) remaining — tap each item below to fix</string>
+
+    <string name="setup_default_dialer">1. Default phone app</string>
+    <string name="setup_default_dialer_ok">This app is your default dialer ✓</string>
+    <string name="setup_default_dialer_needed">Tap to set as default phone app</string>
+
+    <string name="setup_microphone">2. Microphone permission</string>
+    <string name="setup_microphone_ok">Microphone access granted ✓</string>
+    <string name="setup_microphone_needed">Tap to grant microphone access</string>
+
+    <string name="setup_notifications">3. Notification permission</string>
+    <string name="setup_notifications_ok">Notifications allowed ✓</string>
+    <string name="setup_notifications_needed">Tap to allow notifications (for recording status)</string>
+
+    <string name="setup_restricted_settings">4. Allow restricted settings</string>
+    <string name="setup_restricted_settings_ok">Restricted settings allowed ✓</string>
+    <string name="setup_restricted_settings_needed">Tap to open App Info → Allow restricted settings</string>
+    <string name="setup_restricted_settings_hint">On Android 13+, go to App Info → ⋮ menu → Allow restricted settings. This is required before enabling the accessibility service.</string>
+
+    <string name="setup_accessibility">5. Accessibility service</string>
+    <string name="setup_accessibility_ok">Call Recording Audio service enabled ✓</string>
+    <string name="setup_accessibility_needed">Tap to enable (captures both sides of the call)</string>
+
+    <string name="setup_battery_optimization">6. Battery optimization</string>
+    <string name="setup_battery_optimization_ok">Battery optimization disabled ✓</string>
+    <string name="setup_battery_optimization_needed">Tap to disable battery optimization (prevents recording from being killed)</string>
+
     <!-- Auto Answer -->
     <string name="auto_answer">Auto Answer</string>
     <string name="auto_answer_mode">Auto-answer incoming calls</string>
