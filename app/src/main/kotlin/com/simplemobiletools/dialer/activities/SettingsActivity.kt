@@ -32,6 +32,7 @@ import com.simplemobiletools.dialer.dialogs.ExportCallHistoryDialog
 import com.simplemobiletools.dialer.dialogs.ManageVisibleTabsDialog
 import com.simplemobiletools.dialer.extensions.config
 import com.simplemobiletools.dialer.extensions.getAvailableSIMCardLabels
+import com.simplemobiletools.dialer.extensions.getSIMDisplayLabel
 import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.models.RecentCall
 import com.simplemobiletools.dialer.models.SimAutoAnswerSettings
