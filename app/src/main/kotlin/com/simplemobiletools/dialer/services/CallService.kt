@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -217,15 +218,22 @@ class CallService : InCallService() {
                 startRecordingIfEnabled()
             }
 
-            // Handle listen-in
+            // Handle listen-in — respect silence/vibrate/DND mode
             val listenInMode = config.listenInMode
+            val canActivateSpeaker = !isInSilentMode()
             when (listenInMode) {
                 LISTEN_IN_AUTO -> {
-                    handler.postDelayed({
-                        CallManager.setAudioRoute(CallAudioState.ROUTE_SPEAKER)
-                        isListeningIn = true
-                        showActiveCallNotification(true)
-                    }, 600)
+                    if (canActivateSpeaker) {
+                        handler.postDelayed({
+                            CallManager.setAudioRoute(CallAudioState.ROUTE_SPEAKER)
+                            isListeningIn = true
+                            showActiveCallNotification(true)
+                        }, 600)
+                    } else {
+                        // Phone is in silent/vibrate/DND — don't activate speaker
+                        isListeningIn = false
+                        showActiveCallNotification(false)
+                    }
                 }
                 LISTEN_IN_NOTIFICATION -> {
                     isListeningIn = false
@@ -240,11 +248,17 @@ class CallService : InCallService() {
 
     private fun startRecordingIfEnabled() {
         if (config.callRecordingEnabled) {
-            val number = currentCallNumber.ifEmpty { "unknown" }
-            val success = callRecordingManager.startRecording(number)
-            if (!success) {
-                currentRecordingResult = null
-            }
+            // Delay recording start slightly to let the audio framework
+            // fully route call audio after the call becomes active.
+            // Without this delay, VOICE_CALL source may capture silence
+            // because the audio HAL hasn't completed routing yet.
+            handler.postDelayed({
+                val number = currentCallNumber.ifEmpty { "unknown" }
+                val success = callRecordingManager.startRecording(number)
+                if (!success) {
+                    currentRecordingResult = null
+                }
+            }, 500)
         }
     }
 
@@ -309,6 +323,32 @@ class CallService : InCallService() {
         wasAutoAnswered = false
         isListeningIn = false
         currentSimId = ""
+    }
+
+    // ---- Silent / DND detection ----
+
+    /**
+     * Returns true if the phone is in a mode where the speaker should NOT be
+     * activated automatically (vibrate-only, silent, or Do Not Disturb).
+     */
+    private fun isInSilentMode(): Boolean {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val ringerMode = audioManager.ringerMode
+        if (ringerMode == AudioManager.RINGER_MODE_SILENT || ringerMode == AudioManager.RINGER_MODE_VIBRATE) {
+            return true
+        }
+
+        // Also check DND (Do Not Disturb) on Android M+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val filter = nm.currentInterruptionFilter
+            if (filter == NotificationManager.INTERRUPTION_FILTER_NONE ||
+                filter == NotificationManager.INTERRUPTION_FILTER_ALARMS) {
+                return true
+            }
+        }
+
+        return false
     }
 
     // ---- Listen-in notification ----

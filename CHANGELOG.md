@@ -1,6 +1,19 @@
 Changelog
 ==========
 
+Version 5.37.0 *(2026-04-01)*
+----------------------------
+
+ * Fixed auto-answer speaker activation: now respects silence mode, vibrate-only, and Do Not Disturb — speaker is NOT activated when phone is in silent/vibrate/DND mode
+ * Improved call recording reliability:
+   - Set AudioManager mode to MODE_IN_CALL before starting recorder to ensure audio HAL routes call audio
+   - Changed sample rate from 44.1kHz to 16kHz (telephony standard) for better VOICE_CALL source compatibility
+   - Added mono channel configuration matching telephony audio
+   - Added 500ms delay before starting recording to let audio routing stabilize
+   - Added CAPTURE_AUDIO_OUTPUT permission (granted by some OEMs to default dialer)
+   - Enhanced accessibility service config with additional flags for better OEM compatibility (Samsung, Xiaomi)
+   - Added detailed logging of audio mode state for diagnostics
+
 Version 5.36.0 *(2026-03-22)*
 ----------------------------
 

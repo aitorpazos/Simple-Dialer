@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Accessibility service configuration for call recording audio capture.
+
+    This service exists solely to unlock the VOICE_CALL audio source on Android 9+.
+    It does not read or interact with screen content.
+
+    The accessibilityFlags include flagRequestFilterKeyEvents because some OEMs
+    (notably Samsung and Xiaomi) use the presence of these flags to determine
+    whether an accessibility service should receive elevated audio privileges.
+-->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagDefault"
+    android:accessibilityFlags="flagDefault|flagIncludeNotImportantViews|flagRequestFilterKeyEvents"
     android:canRetrieveWindowContent="false"
+    android:canPerformGestures="false"
     android:description="@string/accessibility_service_description"
     android:notificationTimeout="0"
     android:settingsActivity="com.simplemobiletools.dialer.activities.SettingsActivity" />

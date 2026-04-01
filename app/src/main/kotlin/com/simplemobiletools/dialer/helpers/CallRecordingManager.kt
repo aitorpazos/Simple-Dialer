@@ -1,6 +1,7 @@
 package com.simplemobiletools.dialer.helpers
 
 import android.content.Context
+import android.media.AudioManager
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
@@ -33,12 +34,21 @@ import java.util.*
  *   1. VOICE_CALL          — may work on some OEMs
  *   2. MIC                 — guaranteed to work (local side only)
  *   3. VOICE_COMMUNICATION — last resort
+ *
+ * Key reliability improvements:
+ *   - Sets AudioManager mode to MODE_IN_CALL before recording to ensure the
+ *     audio framework routes call audio to the recorder.
+ *   - Restores the original audio mode if recording fails.
+ *   - Uses 16kHz sample rate (telephony standard) instead of 44.1kHz for better
+ *     compatibility with VOICE_CALL source on constrained audio HALs.
  */
 class CallRecordingManager(private val context: Context) {
     companion object {
         private const val TAG = "CallRecordingManager"
 
-        private const val SAMPLE_RATE = 44100
+        // Telephony-standard sample rate — more compatible with VOICE_CALL
+        // than 44100 on many audio HALs
+        private const val SAMPLE_RATE = 16000
         private const val BIT_RATE = 128000
     }
 
@@ -49,6 +59,7 @@ class CallRecordingManager(private val context: Context) {
     private var parcelFd: ParcelFileDescriptor? = null
     private var isRecording = false
     private var activeAudioSource: String? = null
+    private var originalAudioMode: Int = AudioManager.MODE_NORMAL
 
     private fun getDefaultRecordingsDir(): File {
         val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
@@ -91,11 +102,35 @@ class CallRecordingManager(private val context: Context) {
     }
 
     /**
+     * Ensure the audio framework is in the right mode for call recording.
+     * This is critical — many devices only route call audio to the recorder
+     * when AudioManager.mode is MODE_IN_CALL or MODE_IN_COMMUNICATION.
+     */
+    private fun ensureAudioModeForRecording() {
+        try {
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            originalAudioMode = audioManager.mode
+            // MODE_IN_CALL tells the audio HAL that a telephony call is active,
+            // which is required for VOICE_CALL source to capture both sides.
+            if (audioManager.mode != AudioManager.MODE_IN_CALL &&
+                audioManager.mode != AudioManager.MODE_IN_COMMUNICATION) {
+                audioManager.mode = AudioManager.MODE_IN_CALL
+                Log.d(TAG, "Set audio mode to MODE_IN_CALL (was $originalAudioMode)")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not set audio mode: ${e.message}")
+        }
+    }
+
+    /**
      * Try each audio source in priority order until one successfully starts.
      */
     private fun startWithFallbackChain(configureOutput: (MediaRecorder) -> Unit): Boolean {
         val sources = getAudioSourcePriority()
         val accessibilityEnabled = CallRecordingAccessibilityService.isServiceEnabled(context)
+
+        // Ensure audio mode is correct before attempting to start recording
+        ensureAudioModeForRecording()
 
         for ((source, sourceName) in sources) {
             try {
@@ -108,13 +143,15 @@ class CallRecordingManager(private val context: Context) {
                     setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                     setAudioSamplingRate(SAMPLE_RATE)
                     setAudioEncodingBitRate(BIT_RATE)
+                    setAudioChannels(1) // Mono — telephony is mono
                     configureOutput(this)
                     prepare()
                     start()
                 }
 
                 activeAudioSource = sourceName
-                Log.i(TAG, "Recording started — source=$sourceName, accessibility=$accessibilityEnabled")
+                Log.i(TAG, "Recording started — source=$sourceName, accessibility=$accessibilityEnabled, " +
+                    "sampleRate=$SAMPLE_RATE, audioMode=${(context.getSystemService(Context.AUDIO_SERVICE) as AudioManager).mode}")
                 return true
             } catch (e: Exception) {
                 Log.w(TAG, "Audio source $sourceName failed: ${e.message}")
