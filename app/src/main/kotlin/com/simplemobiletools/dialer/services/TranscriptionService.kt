@@ -91,19 +91,34 @@ class TranscriptionService : Service() {
         val contactName = intent?.getStringExtra(EXTRA_CONTACT_NAME) ?: ""
         val recordingFilePath = intent?.getStringExtra(EXTRA_RECORDING_FILE_PATH)
 
-        if (uriStr == null || recordingName == null) {
-            Log.e(TAG, "Missing recording URI or name")
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        val recordingUri = Uri.parse(uriStr)
-
+        // Must call startForeground() ASAP after startForegroundService() to avoid crash
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.transcription_in_progress)),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
             startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.transcription_in_progress)))
+        }
+
+        if (recordingName == null) {
+            Log.e(TAG, "Missing recording name")
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        // URI can come from the intent (CallService flow) or be looked up by name
+        // (dialog flow where SAF URIs can't be granted via intent extras)
+        val recordingUri = if (uriStr != null) {
+            Uri.parse(uriStr)
+        } else {
+            val lookedUp = transcriptionManager.getRecordingUriByName(recordingName)
+            if (lookedUp == null) {
+                Log.e(TAG, "Could not find recording URI for: $recordingName")
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            lookedUp
         }
 
         if (isRunning) {

@@ -111,24 +111,15 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
     }
 
     private fun startTranscription(recordingName: String, call: RecentCall) {
-        val uri = transcriptionManager.getRecordingUriByName(recordingName)
-        if (uri == null) {
-            Toast.makeText(activity, R.string.recording_not_found, Toast.LENGTH_SHORT).show()
-            return
-        }
-
         try {
-            val intent = TranscriptionService.createIntent(
-                context = activity,
-                recordingUri = uri,
-                recordingName = recordingName,
-                contactName = call.name
-            )
-            // Grant read permission so the service can access SAF content:// URIs
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            activity.grantUriPermission(
-                activity.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
+            // Don't pass the URI from here — the service will look it up itself
+            // using TranscriptionManager.getRecordingUriByName(). This avoids
+            // SecurityException from trying to grant SAF content:// URIs that
+            // we don't own (they're accessed via persisted tree permissions).
+            val intent = Intent(activity, TranscriptionService::class.java).apply {
+                putExtra(TranscriptionService.EXTRA_RECORDING_NAME, recordingName)
+                putExtra(TranscriptionService.EXTRA_CONTACT_NAME, call.name)
+            }
             androidx.core.content.ContextCompat.startForegroundService(activity, intent)
             Toast.makeText(activity, R.string.transcription_started, Toast.LENGTH_SHORT).show()
             dialog?.dismiss()
