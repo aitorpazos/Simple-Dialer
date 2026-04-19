@@ -124,7 +124,11 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
                 recordingName = recordingName,
                 contactName = call.name
             )
-            activity.startService(intent)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                activity.startForegroundService(intent)
+            } else {
+                activity.startService(intent)
+            }
             Toast.makeText(activity, R.string.transcription_started, Toast.LENGTH_SHORT).show()
             dialog?.dismiss()
         } catch (e: Exception) {
