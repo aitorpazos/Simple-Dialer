@@ -1,6 +1,7 @@
 package com.simplemobiletools.dialer.dialogs
 
 import android.content.Intent
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -21,6 +22,10 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
     private var dialog: AlertDialog? = null
     private val binding by activity.viewBinding(DialogShowGroupedCallsBinding::inflate)
     private val transcriptionManager = TranscriptionManager(activity)
+
+    companion object {
+        private const val TAG = "ShowGroupedCallsDlg"
+    }
 
     init {
         RecentsHelper(activity).getRecentCalls(false) { allRecents ->
@@ -47,9 +52,13 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
         // Use the first (most recent) call to find associated recording
         val call = recents.firstOrNull() ?: return
 
+        Log.d(TAG, "setupRecordingActions: phone=${call.phoneNumber}, startTS=${call.startTS}, name=${call.name}")
+
         val recordingName = transcriptionManager.findRecordingForCall(call.phoneNumber, call.startTS)
         val hasRecording = recordingName != null
         val hasTranscription = hasRecording && transcriptionManager.hasTranscription(recordingName!!)
+
+        Log.d(TAG, "recordingName=$recordingName, hasRecording=$hasRecording, hasTranscription=$hasTranscription")
 
         if (!hasRecording && !hasTranscription) return
 

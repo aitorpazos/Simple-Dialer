@@ -42,20 +42,30 @@ class TranscriptionManager(private val context: Context) {
         val sanitizedNumber = phoneNumber.replace(Regex("[^0-9+]"), "")
         val prefix = "call_${sanitizedNumber}_"
 
+        Log.d(TAG, "findRecordingForCall: phoneNumber=$phoneNumber, sanitized=$sanitizedNumber, prefix=$prefix, startTS=$startTimestampSec")
+
         // Check default directory
         val dir = getDefaultTranscriptionsDir()
+        Log.d(TAG, "Checking default dir: ${dir.absolutePath}, exists=${dir.exists()}, files=${dir.listFiles()?.size ?: 0}")
         val match = findMatchingFile(dir, prefix, startTimestampSec)
-        if (match != null) return match.name
+        if (match != null) {
+            Log.d(TAG, "Found match in default dir: ${match.name}")
+            return match.name
+        }
 
         // Check custom SAF directory
         val customUriString = context.config.callRecordingPath
+        Log.d(TAG, "Checking custom SAF path: '$customUriString'")
         if (customUriString.isNotEmpty()) {
             try {
                 val treeUri = Uri.parse(customUriString)
                 val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
                 if (treeDoc != null) {
-                    val matchDoc = treeDoc.listFiles()
-                        .filter { it.name?.startsWith(prefix) == true && it.name?.endsWith(".m4a") == true }
+                    val allFiles = treeDoc.listFiles()
+                    val prefixMatches = allFiles.filter { it.name?.startsWith(prefix) == true && it.name?.endsWith(".m4a") == true }
+                    Log.d(TAG, "SAF dir has ${allFiles.size} files, ${prefixMatches.size} match prefix '$prefix'")
+                    prefixMatches.forEach { Log.d(TAG, "  SAF candidate: ${it.name}") }
+                    val matchDoc = prefixMatches
                         .mapNotNull { doc ->
                             val name = doc.name ?: return@mapNotNull null
                             val ts = extractTimestampFromFilename(name) ?: return@mapNotNull null
@@ -63,11 +73,17 @@ class TranscriptionManager(private val context: Context) {
                         }
                         .filter { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) < 120 }
                         .minByOrNull { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) }
-                    if (matchDoc != null) return matchDoc.first
+                    if (matchDoc != null) {
+                        Log.d(TAG, "Found match in SAF dir: ${matchDoc.first}")
+                        return matchDoc.first
+                    }
                 }
-            } catch (_: Exception) {}
+            } catch (e: Exception) {
+                Log.e(TAG, "SAF lookup failed", e)
+            }
         }
 
+        Log.d(TAG, "No recording found for $phoneNumber at $startTimestampSec")
         return null
     }
 
@@ -176,8 +192,11 @@ class TranscriptionManager(private val context: Context) {
     fun hasTranscription(recordingName: String): Boolean {
         return try {
             val file = getTranscriptionFile(recordingName)
-            file.exists() && file.length() > 0
+            val exists = file.exists() && file.length() > 0
+            Log.d(TAG, "hasTranscription($recordingName): file=${file.absolutePath}, exists=${file.exists()}, size=${if (file.exists()) file.length() else -1}, result=$exists")
+            exists
         } catch (e: Exception) {
+            Log.e(TAG, "hasTranscription check failed", e)
             false
         }
     }
