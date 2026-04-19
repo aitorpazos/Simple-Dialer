@@ -193,6 +193,8 @@
     <string name="play_recording">Play recording</string>
     <string name="open_recording">Open recording</string>
     <string name="show_transcription">Show transcription</string>
+    <string name="transcribe_recording">Transcribe</string>
+    <string name="transcription_started">Transcription started…</string>
 
     <!-- FAQ -->
     <string name="faq_1_title">I hear incoming calls, but the screen doesn\'t turn on. What can I do?</string>

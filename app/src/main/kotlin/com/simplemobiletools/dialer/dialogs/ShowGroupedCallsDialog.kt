@@ -17,6 +17,7 @@ import com.simplemobiletools.dialer.adapters.RecentCallsAdapter
 import com.simplemobiletools.dialer.databinding.DialogShowGroupedCallsBinding
 import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.models.RecentCall
+import com.simplemobiletools.dialer.services.TranscriptionService
 
 class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayList<Int>) {
     private var dialog: AlertDialog? = null
@@ -60,29 +61,30 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
 
         Log.d(TAG, "recordingName=$recordingName, hasRecording=$hasRecording, hasTranscription=$hasTranscription")
 
-        if (!hasRecording && !hasTranscription) return
+        if (!hasRecording) return
 
         val textColor = activity.getProperTextColor()
 
         binding.recordingActionsHolder.visibility = View.VISIBLE
 
-        if (hasRecording) {
-            binding.btnPlayRecording.visibility = View.VISIBLE
-            binding.btnPlayRecordingIcon.setColorFilter(textColor)
-            binding.btnPlayRecordingLabel.setTextColor(textColor)
-            binding.btnPlayRecording.setOnClickListener {
-                playRecording(recordingName!!)
-            }
+        // Play recording
+        binding.btnPlayRecording.visibility = View.VISIBLE
+        binding.btnPlayRecordingIcon.setColorFilter(textColor)
+        binding.btnPlayRecordingLabel.setTextColor(textColor)
+        binding.btnPlayRecording.setOnClickListener {
+            playRecording(recordingName!!)
+        }
 
-            binding.btnShareRecording.visibility = View.VISIBLE
-            binding.btnShareRecordingIcon.setColorFilter(textColor)
-            binding.btnShareRecordingLabel.setTextColor(textColor)
-            binding.btnShareRecording.setOnClickListener {
-                shareRecording(recordingName!!, call)
-            }
+        // Share recording
+        binding.btnShareRecording.visibility = View.VISIBLE
+        binding.btnShareRecordingIcon.setColorFilter(textColor)
+        binding.btnShareRecordingLabel.setTextColor(textColor)
+        binding.btnShareRecording.setOnClickListener {
+            shareRecording(recordingName!!, call)
         }
 
         if (hasTranscription) {
+            // Show transcription
             binding.btnShowTranscription.visibility = View.VISIBLE
             binding.btnShowTranscriptionIcon.setColorFilter(textColor)
             binding.btnShowTranscriptionLabel.setTextColor(textColor)
@@ -90,12 +92,44 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
                 showTranscription(recordingName!!, call)
             }
 
+            // Share transcription
             binding.btnShareTranscription.visibility = View.VISIBLE
             binding.btnShareTranscriptionIcon.setColorFilter(textColor)
             binding.btnShareTranscriptionLabel.setTextColor(textColor)
             binding.btnShareTranscription.setOnClickListener {
                 shareTranscription(recordingName!!, call)
             }
+        } else {
+            // Transcribe button — recording exists but no transcription yet
+            binding.btnTranscribe.visibility = View.VISIBLE
+            binding.btnTranscribeIcon.setColorFilter(textColor)
+            binding.btnTranscribeLabel.setTextColor(textColor)
+            binding.btnTranscribe.setOnClickListener {
+                startTranscription(recordingName!!, call)
+            }
+        }
+    }
+
+    private fun startTranscription(recordingName: String, call: RecentCall) {
+        val uri = transcriptionManager.getRecordingUriByName(recordingName)
+        if (uri == null) {
+            Toast.makeText(activity, R.string.recording_not_found, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val intent = TranscriptionService.createIntent(
+                context = activity,
+                recordingUri = uri,
+                recordingName = recordingName,
+                contactName = call.name
+            )
+            activity.startService(intent)
+            Toast.makeText(activity, R.string.transcription_started, Toast.LENGTH_SHORT).show()
+            dialog?.dismiss()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start transcription", e)
+            Toast.makeText(activity, R.string.share_failed, Toast.LENGTH_SHORT).show()
         }
     }
 

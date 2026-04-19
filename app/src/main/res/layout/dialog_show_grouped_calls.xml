@@ -92,6 +92,36 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/btn_transcribe"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/normal_margin"
+            android:paddingEnd="@dimen/normal_margin"
+            android:paddingTop="@dimen/activity_margin"
+            android:paddingBottom="@dimen/activity_margin"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/btn_transcribe_icon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_description_vector" />
+
+            <TextView
+                android:id="@+id/btn_transcribe_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/normal_margin"
+                android:text="@string/transcribe_recording"
+                android:textSize="@dimen/bigger_text_size" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/btn_show_transcription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
