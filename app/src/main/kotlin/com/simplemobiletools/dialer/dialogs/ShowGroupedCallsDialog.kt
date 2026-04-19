@@ -100,13 +100,36 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
                 shareTranscription(recordingName!!, call)
             }
         } else {
-            // Transcribe button — recording exists but no transcription yet
+            // Opportunistic transcription: auto-trigger if missing, show manual button as fallback
+            autoTriggerTranscription(recordingName!!, call)
+
             binding.btnTranscribe.visibility = View.VISIBLE
             binding.btnTranscribeIcon.setColorFilter(textColor)
             binding.btnTranscribeLabel.setTextColor(textColor)
             binding.btnTranscribe.setOnClickListener {
                 startTranscription(recordingName!!, call)
             }
+        }
+    }
+
+    /**
+     * Opportunistically start transcription in the background when the dialog detects
+     * a recording without a transcription. This handles the case where automatic
+     * post-call transcription failed or was not enabled at the time.
+     */
+    private fun autoTriggerTranscription(recordingName: String, call: RecentCall) {
+        val uri = transcriptionManager.getRecordingUriByName(recordingName) ?: return
+        try {
+            val intent = TranscriptionService.createIntent(
+                context = activity,
+                recordingUri = uri,
+                recordingName = recordingName,
+                contactName = call.name
+            )
+            androidx.core.content.ContextCompat.startForegroundService(activity, intent)
+            Log.d(TAG, "Auto-triggered transcription for $recordingName")
+        } catch (e: Exception) {
+            Log.e(TAG, "Auto-trigger transcription failed", e)
         }
     }
 
@@ -124,15 +147,11 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
                 recordingName = recordingName,
                 contactName = call.name
             )
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                activity.startForegroundService(intent)
-            } else {
-                activity.startService(intent)
-            }
+            androidx.core.content.ContextCompat.startForegroundService(activity, intent)
             Toast.makeText(activity, R.string.transcription_started, Toast.LENGTH_SHORT).show()
             dialog?.dismiss()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start transcription", e)
+            Log.e(TAG, "Failed to start transcription service", e)
             Toast.makeText(activity, R.string.share_failed, Toast.LENGTH_SHORT).show()
         }
     }
