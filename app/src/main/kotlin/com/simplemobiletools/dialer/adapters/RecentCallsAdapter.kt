@@ -2,14 +2,12 @@ package com.simplemobiletools.dialer.adapters
 
 import android.content.Intent
 import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.provider.CallLog.Calls
 import android.text.SpannableString
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.*
 import android.widget.PopupMenu
-import android.widget.Toast
 import com.bumptech.glide.Glide
 import com.simplemobiletools.commons.adapters.MyRecyclerViewAdapter
 import com.simplemobiletools.commons.dialogs.ConfirmationDialog
@@ -21,7 +19,6 @@ import com.simplemobiletools.commons.views.MyRecyclerView
 import com.simplemobiletools.dialer.R
 import com.simplemobiletools.dialer.activities.MainActivity
 import com.simplemobiletools.dialer.activities.SimpleActivity
-import com.simplemobiletools.dialer.activities.TranscriptionViewActivity
 import com.simplemobiletools.dialer.databinding.ItemRecentCallBinding
 import com.simplemobiletools.dialer.dialogs.ShowGroupedCallsDialog
 import com.simplemobiletools.dialer.extensions.*
@@ -46,7 +43,6 @@ class RecentCallsAdapter(
     private val redColor = resources.getColor(R.color.md_red_700)
     private var textToHighlight = ""
     private var durationPadding = resources.getDimension(R.dimen.normal_margin).toInt()
-    private val transcriptionManager by lazy { TranscriptionManager(activity) }
 
     init {
         initDrawables()
@@ -273,105 +269,6 @@ class RecentCallsAdapter(
         }
     }
 
-    private fun playRecording(call: RecentCall) {
-        val recordingName = transcriptionManager.findRecordingForCall(call.phoneNumber, call.startTS)
-        if (recordingName == null) {
-            Toast.makeText(activity, R.string.recording_not_found, Toast.LENGTH_SHORT).show()
-            return
-        }
-        val uri = transcriptionManager.getRecordingUriByName(recordingName)
-        if (uri == null) {
-            Toast.makeText(activity, R.string.recording_not_found, Toast.LENGTH_SHORT).show()
-            return
-        }
-        try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "audio/*")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            activity.startActivity(intent)
-        } catch (_: Exception) {
-            Toast.makeText(activity, R.string.no_app_to_play_recording, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun shareRecording(call: RecentCall) {
-        val recordingName = transcriptionManager.findRecordingForCall(call.phoneNumber, call.startTS)
-        if (recordingName == null) {
-            Toast.makeText(activity, R.string.recording_not_found, Toast.LENGTH_SHORT).show()
-            return
-        }
-        val uri = transcriptionManager.getRecordingUriByName(recordingName)
-        if (uri == null) {
-            Toast.makeText(activity, R.string.recording_not_found, Toast.LENGTH_SHORT).show()
-            return
-        }
-        try {
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "audio/*"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, recordingName)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            val chooser = Intent.createChooser(shareIntent, activity.getString(R.string.share_recording))
-            activity.startActivity(chooser)
-        } catch (_: Exception) {
-            Toast.makeText(activity, R.string.share_failed, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun showTranscription(call: RecentCall) {
-        val recordingName = transcriptionManager.findRecordingForCall(call.phoneNumber, call.startTS)
-        if (recordingName == null) {
-            Toast.makeText(activity, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
-            return
-        }
-        val text = transcriptionManager.loadTranscription(recordingName)
-        if (text.isNullOrBlank()) {
-            Toast.makeText(activity, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
-            return
-        }
-        try {
-            val intent = Intent(activity, TranscriptionViewActivity::class.java).apply {
-                putExtra(EXTRA_CONTACT_NAME, call.name)
-                putExtra(EXTRA_RECORDING_NAME, recordingName)
-            }
-            activity.startActivity(intent)
-        } catch (_: Exception) {
-            Toast.makeText(activity, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun shareTranscription(call: RecentCall) {
-        val recordingName = transcriptionManager.findRecordingForCall(call.phoneNumber, call.startTS)
-        if (recordingName == null) {
-            Toast.makeText(activity, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
-            return
-        }
-        val text = transcriptionManager.loadTranscription(recordingName)
-        if (text.isNullOrBlank()) {
-            Toast.makeText(activity, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
-            return
-        }
-        try {
-            val subject = if (call.name.isNotEmpty()) {
-                activity.getString(R.string.transcription_share_subject, call.name)
-            } else {
-                activity.getString(R.string.transcription_share_subject_generic)
-            }
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_SUBJECT, subject)
-                putExtra(Intent.EXTRA_TEXT, text)
-            }
-            val chooser = Intent.createChooser(shareIntent, activity.getString(R.string.share_transcription))
-            activity.startActivity(chooser)
-        } catch (_: Exception) {
-            Toast.makeText(activity, R.string.share_failed, Toast.LENGTH_SHORT).show()
-        }
-    }
-
     fun updateItems(newItems: List<RecentCall>, highlightText: String = "") {
         if (newItems.hashCode() != recentCalls.hashCode()) {
             recentCalls = newItems.toMutableList()
@@ -493,15 +390,6 @@ class RecentCallsAdapter(
                 findItem(R.id.cab_block_number).title = activity.addLockedLabelIfNeeded(R.string.block_number)
                 findItem(R.id.cab_block_number).isVisible = isNougatPlus() && !call.isUnknownNumber
                 findItem(R.id.cab_remove_default_sim).isVisible = (activity.config.getCustomSIM(selectedNumber) ?: "") != "" && !call.isUnknownNumber
-
-                // Recording/transcription items — check if a recording exists for this call
-                val recordingName = transcriptionManager.findRecordingForCall(call.phoneNumber, call.startTS)
-                val hasRecording = recordingName != null
-                val hasTranscription = hasRecording && transcriptionManager.hasTranscription(recordingName!!)
-                findItem(R.id.cab_play_recording).isVisible = hasRecording
-                findItem(R.id.cab_share_recording).isVisible = hasRecording
-                findItem(R.id.cab_show_transcription).isVisible = hasTranscription
-                findItem(R.id.cab_share_transcription).isVisible = hasTranscription
             }
 
             setOnMenuItemClickListener { item ->
@@ -569,22 +457,6 @@ class RecentCallsAdapter(
                         executeItemMenuOperation(callId) {
                             removeDefaultSIM()
                         }
-                    }
-
-                    R.id.cab_play_recording -> {
-                        playRecording(call)
-                    }
-
-                    R.id.cab_share_recording -> {
-                        shareRecording(call)
-                    }
-
-                    R.id.cab_show_transcription -> {
-                        showTranscription(call)
-                    }
-
-                    R.id.cab_share_transcription -> {
-                        shareTranscription(call)
                     }
                 }
                 true
