@@ -100,36 +100,13 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
                 shareTranscription(recordingName!!, call)
             }
         } else {
-            // Opportunistic transcription: auto-trigger if missing, show manual button as fallback
-            autoTriggerTranscription(recordingName!!, call)
-
+            // Show manual Transcribe button for recordings without transcription
             binding.btnTranscribe.visibility = View.VISIBLE
             binding.btnTranscribeIcon.setColorFilter(textColor)
             binding.btnTranscribeLabel.setTextColor(textColor)
             binding.btnTranscribe.setOnClickListener {
                 startTranscription(recordingName!!, call)
             }
-        }
-    }
-
-    /**
-     * Opportunistically start transcription in the background when the dialog detects
-     * a recording without a transcription. This handles the case where automatic
-     * post-call transcription failed or was not enabled at the time.
-     */
-    private fun autoTriggerTranscription(recordingName: String, call: RecentCall) {
-        val uri = transcriptionManager.getRecordingUriByName(recordingName) ?: return
-        try {
-            val intent = TranscriptionService.createIntent(
-                context = activity,
-                recordingUri = uri,
-                recordingName = recordingName,
-                contactName = call.name
-            )
-            androidx.core.content.ContextCompat.startForegroundService(activity, intent)
-            Log.d(TAG, "Auto-triggered transcription for $recordingName")
-        } catch (e: Exception) {
-            Log.e(TAG, "Auto-trigger transcription failed", e)
         }
     }
 
@@ -146,6 +123,11 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
                 recordingUri = uri,
                 recordingName = recordingName,
                 contactName = call.name
+            )
+            // Grant read permission so the service can access SAF content:// URIs
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            activity.grantUriPermission(
+                activity.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
             androidx.core.content.ContextCompat.startForegroundService(activity, intent)
             Toast.makeText(activity, R.string.transcription_started, Toast.LENGTH_SHORT).show()

@@ -294,10 +294,8 @@ class CallService : InCallService() {
                 recordingResult = recordingResult
             )
 
-            // Trigger transcription automatically if recording exists
-            // Always attempt transcription — the setting only controls the UI toggle,
-            // but if we have a recording we should always try to transcribe it
-            if (recordingResult != null) {
+            // Trigger transcription automatically if recording exists and transcription is enabled
+            if (recordingResult != null && config.callTranscriptionEnabled) {
                 val transcriptionUri = recordingResult.uri
                     ?: recordingResult.file?.let { android.net.Uri.fromFile(it) }
                 if (transcriptionUri != null) {
