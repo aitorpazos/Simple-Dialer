@@ -16,6 +16,8 @@ import android.os.IBinder
 import android.util.Log
 import com.simplemobiletools.dialer.R
 import com.simplemobiletools.dialer.extensions.config
+import com.simplemobiletools.dialer.helpers.CallSummaryManager
+import com.simplemobiletools.dialer.helpers.RecordingResult
 import com.simplemobiletools.dialer.helpers.TranscriptionManager
 import com.simplemobiletools.dialer.helpers.VoskModelManager
 import org.vosk.Model
@@ -44,11 +46,26 @@ class TranscriptionService : Service() {
 
         const val EXTRA_RECORDING_URI = "extra_recording_uri"
         const val EXTRA_RECORDING_NAME = "extra_recording_name"
+        const val EXTRA_NOTIFICATION_ID = "extra_summary_notification_id"
+        const val EXTRA_CONTACT_NAME = "extra_contact_name"
+        const val EXTRA_RECORDING_FILE_PATH = "extra_recording_file_path"
 
-        fun createIntent(context: Context, recordingUri: Uri, recordingName: String): Intent {
+        fun createIntent(
+            context: Context,
+            recordingUri: Uri,
+            recordingName: String,
+            summaryNotificationId: Int = -1,
+            contactName: String = "",
+            recordingFilePath: String? = null
+        ): Intent {
             return Intent(context, TranscriptionService::class.java).apply {
                 putExtra(EXTRA_RECORDING_URI, recordingUri.toString())
                 putExtra(EXTRA_RECORDING_NAME, recordingName)
+                putExtra(EXTRA_NOTIFICATION_ID, summaryNotificationId)
+                putExtra(EXTRA_CONTACT_NAME, contactName)
+                if (recordingFilePath != null) {
+                    putExtra(EXTRA_RECORDING_FILE_PATH, recordingFilePath)
+                }
             }
         }
     }
@@ -69,6 +86,9 @@ class TranscriptionService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val uriStr = intent?.getStringExtra(EXTRA_RECORDING_URI)
         val recordingName = intent?.getStringExtra(EXTRA_RECORDING_NAME)
+        val summaryNotificationId = intent?.getIntExtra(EXTRA_NOTIFICATION_ID, -1) ?: -1
+        val contactName = intent?.getStringExtra(EXTRA_CONTACT_NAME) ?: ""
+        val recordingFilePath = intent?.getStringExtra(EXTRA_RECORDING_FILE_PATH)
 
         if (uriStr == null || recordingName == null) {
             Log.e(TAG, "Missing recording URI or name")
@@ -90,6 +110,19 @@ class TranscriptionService : Service() {
         Thread {
             try {
                 transcribe(recordingUri, recordingName)
+
+                // Update the call summary notification with transcription buttons
+                if (summaryNotificationId >= 0) {
+                    val recordingResult = if (recordingFilePath != null) {
+                        val file = java.io.File(recordingFilePath)
+                        RecordingResult(recordingName, recordingUri, if (file.exists()) file else null)
+                    } else {
+                        RecordingResult(recordingName, recordingUri, null)
+                    }
+                    CallSummaryManager(this@TranscriptionService).addTranscriptionActions(
+                        summaryNotificationId, contactName, recordingName, recordingResult
+                    )
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Transcription failed", e)
             } finally {

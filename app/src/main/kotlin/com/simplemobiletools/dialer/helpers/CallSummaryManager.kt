@@ -21,12 +21,19 @@ class CallSummaryManager(private val context: Context) {
         private var notificationCounter = 0
     }
 
+    /**
+     * Show call summary notification. Returns the notification ID so it can be updated later
+     * (e.g., when transcription completes asynchronously).
+     *
+     * Transcription buttons are NOT added here — they are added by [addTranscriptionActions]
+     * once the transcription is actually available.
+     */
     fun showCallSummary(
         contactName: String,
         phoneNumber: String,
         durationSeconds: Int,
         recordingResult: RecordingResult?
-    ) {
+    ): Int {
         createNotificationChannel()
 
         val durationText = formatDuration(durationSeconds)
@@ -55,7 +62,7 @@ class CallSummaryManager(private val context: Context) {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
-        // Add configurable actions
+        // Add configurable actions (recording-related only; transcription added later)
         val enabledActions = context.config.callEndNotificationActions
         val hasRecording = recordingResult?.uri != null
 
@@ -99,23 +106,87 @@ class CallSummaryManager(private val context: Context) {
             }
         }
 
-        // Transcription actions don't require a recording
-        if (enabledActions and NOTIF_ACTION_SHARE_TRANSCRIPTION != 0) {
-            val shareTransIntent = createActionIntent(
-                ACTION_SHARE_TRANSCRIPTION, notificationId, null,
-                recordingResult?.name, contactName
-            )
-            val shareTransPi = PendingIntent.getBroadcast(
-                context, notificationId * 10 + 4, shareTransIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            builder.addAction(R.drawable.ic_phone_vector, context.getString(R.string.notif_action_share_transcription), shareTransPi)
+        notificationManager.notify(notificationId, builder.build())
+        return notificationId
+    }
+
+    /**
+     * Update an existing call summary notification to add transcription action buttons.
+     * Called by TranscriptionService once the transcription file is ready.
+     */
+    fun addTranscriptionActions(
+        notificationId: Int,
+        contactName: String,
+        recordingName: String,
+        recordingResult: RecordingResult?
+    ) {
+        createNotificationChannel()
+
+        val enabledActions = context.config.callEndNotificationActions
+        val hasTranscriptionActions = (enabledActions and NOTIF_ACTION_SHARE_TRANSCRIPTION != 0) ||
+            (enabledActions and NOTIF_ACTION_SHOW_TRANSCRIPTION != 0)
+
+        if (!hasTranscriptionActions) return
+
+        val title = context.getString(R.string.call_summary_title, contactName.ifEmpty { recordingName })
+        val transcriptionManager = TranscriptionManager(context)
+        val transcriptionText = transcriptionManager.loadTranscription(recordingName)
+
+        // Build a fresh notification with recording + transcription actions
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_phone_vector)
+            .setContentTitle(title)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+        if (!transcriptionText.isNullOrBlank()) {
+            // Show a preview of the transcription in the notification body
+            val preview = if (transcriptionText.length > 200) {
+                transcriptionText.take(200) + "…"
+            } else {
+                transcriptionText
+            }
+            builder.setContentText(context.getString(R.string.transcription_ready))
+            builder.setStyle(NotificationCompat.BigTextStyle().bigText(preview))
+        } else {
+            builder.setContentText(context.getString(R.string.transcription_ready))
         }
 
+        // Re-add recording actions
+        val hasRecording = recordingResult?.uri != null
+        if (hasRecording) {
+            val recordingUri = getShareableUri(recordingResult!!)
+
+            if (enabledActions and NOTIF_ACTION_PLAY_RECORDING != 0) {
+                val playIntent = createActionIntent(
+                    ACTION_PLAY_RECORDING, notificationId, recordingUri,
+                    recordingResult.name, contactName
+                )
+                val playPi = PendingIntent.getBroadcast(
+                    context, notificationId * 10 + 1, playIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(R.drawable.ic_phone_vector, context.getString(R.string.notif_action_play_recording), playPi)
+            }
+
+            if (enabledActions and NOTIF_ACTION_SHARE != 0) {
+                val shareIntent = createActionIntent(
+                    ACTION_SHARE_CHOOSER, notificationId, recordingUri,
+                    recordingResult.name, contactName
+                )
+                val sharePi = PendingIntent.getBroadcast(
+                    context, notificationId * 10 + 2, shareIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.addAction(R.drawable.ic_phone_vector, context.getString(R.string.notif_action_share), sharePi)
+            }
+        }
+
+        // Add transcription actions (now that the file exists)
         if (enabledActions and NOTIF_ACTION_SHOW_TRANSCRIPTION != 0) {
             val showTransIntent = createActionIntent(
                 ACTION_SHOW_TRANSCRIPTION, notificationId, null,
-                recordingResult?.name, contactName
+                recordingName, contactName
             )
             val showTransPi = PendingIntent.getBroadcast(
                 context, notificationId * 10 + 5, showTransIntent,
@@ -124,6 +195,19 @@ class CallSummaryManager(private val context: Context) {
             builder.addAction(R.drawable.ic_phone_vector, context.getString(R.string.notif_action_show_transcription), showTransPi)
         }
 
+        if (enabledActions and NOTIF_ACTION_SHARE_TRANSCRIPTION != 0) {
+            val shareTransIntent = createActionIntent(
+                ACTION_SHARE_TRANSCRIPTION, notificationId, null,
+                recordingName, contactName
+            )
+            val shareTransPi = PendingIntent.getBroadcast(
+                context, notificationId * 10 + 4, shareTransIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(R.drawable.ic_phone_vector, context.getString(R.string.notif_action_share_transcription), shareTransPi)
+        }
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(notificationId, builder.build())
     }
 

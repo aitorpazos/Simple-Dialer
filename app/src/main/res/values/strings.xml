@@ -164,6 +164,7 @@
     <string name="no_app_to_play_recording">No app found to play recording</string>
     <string name="share_failed">Could not share</string>
     <string name="transcription_not_available">Transcription not available yet</string>
+    <string name="transcription_ready">Transcription ready</string>
     <string name="transcription_in_progress">Transcribing call…</string>
     <string name="transcription_progress">Transcribing… %d%%</string>
     <string name="transcription_downloading_model">Downloading speech model…</string>

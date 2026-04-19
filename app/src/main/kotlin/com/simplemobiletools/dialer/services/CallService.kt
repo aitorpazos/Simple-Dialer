@@ -287,30 +287,33 @@ class CallService : InCallService() {
         // Show call summary notification
         if (durationSeconds > 0) {
             val name = currentCallName.ifEmpty { currentCallNumber }
-            callSummaryManager.showCallSummary(
+            val summaryNotificationId = callSummaryManager.showCallSummary(
                 contactName = name,
                 phoneNumber = currentCallNumber,
                 durationSeconds = durationSeconds,
                 recordingResult = recordingResult
             )
-        }
 
-        // Trigger transcription if recording exists and transcription is enabled
-        if (recordingResult != null && config.callTranscriptionEnabled) {
-            val transcriptionUri = recordingResult.uri
-                ?: recordingResult.file?.let { android.net.Uri.fromFile(it) }
-            if (transcriptionUri != null) {
-                try {
-                    val transcriptionIntent = TranscriptionService.createIntent(
-                        this, transcriptionUri, recordingResult.name
-                    )
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                        startForegroundService(transcriptionIntent)
-                    } else {
-                        startService(transcriptionIntent)
+            // Trigger transcription if recording exists and transcription is enabled
+            if (recordingResult != null && config.callTranscriptionEnabled) {
+                val transcriptionUri = recordingResult.uri
+                    ?: recordingResult.file?.let { android.net.Uri.fromFile(it) }
+                if (transcriptionUri != null) {
+                    try {
+                        val transcriptionIntent = TranscriptionService.createIntent(
+                            this, transcriptionUri, recordingResult.name,
+                            summaryNotificationId = summaryNotificationId,
+                            contactName = name,
+                            recordingFilePath = recordingResult.file?.absolutePath
+                        )
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            startForegroundService(transcriptionIntent)
+                        } else {
+                            startService(transcriptionIntent)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
             }
         }
