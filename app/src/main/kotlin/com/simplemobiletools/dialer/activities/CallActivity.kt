@@ -59,6 +59,8 @@ class CallActivity : SimpleActivity() {
     private var stopAnimation = false
     private var viewsUnderDialpad = arrayListOf<Pair<View, Float>>()
     private var dialpadHeight = 0f
+    private val autoAnswerCountdownHandler = Handler(Looper.getMainLooper())
+    private var isAutoAnswerCountdownActive = false
 
     private var audioRouteChooserDialog: DynamicBottomSheetChooserDialog? = null
 
@@ -98,6 +100,7 @@ class CallActivity : SimpleActivity() {
         super.onDestroy()
         CallManager.removeListener(callCallback)
         disableProximitySensor()
+        autoAnswerCountdownHandler.removeCallbacksAndMessages(null)
 
         if (screenOnWakeLock?.isHeld == true) {
             screenOnWakeLock!!.release()
@@ -177,6 +180,10 @@ class CallActivity : SimpleActivity() {
 
         callEnd.setOnClickListener {
             endCall()
+        }
+
+        autoAnswerSkipButton.setOnClickListener {
+            cancelAutoAnswerCountdownAndService()
         }
 
         dialpadInclude.apply {
@@ -691,6 +698,7 @@ class CallActivity : SimpleActivity() {
     }
 
     private fun acceptCall() {
+        cancelAutoAnswerCountdownAndService()
         CallManager.accept()
     }
 
@@ -702,10 +710,12 @@ class CallActivity : SimpleActivity() {
 
     private fun callRinging() {
         binding.incomingCallHolder.beVisible()
+        startAutoAnswerCountdownPolling()
     }
 
     private fun callStarted() {
         enableProximitySensor()
+        hideAutoAnswerCountdownUI()
         binding.incomingCallHolder.beGone()
         binding.ongoingCallHolder.beVisible()
         callDurationHandler.removeCallbacks(updateCallDurationTask)
@@ -721,6 +731,7 @@ class CallActivity : SimpleActivity() {
     }
 
     private fun endCall() {
+        cancelAutoAnswerCountdownAndService()
         CallManager.reject()
         disableProximitySensor()
         audioRouteChooserDialog?.dismissAllowingStateLoss()
@@ -747,6 +758,52 @@ class CallActivity : SimpleActivity() {
             binding.callStatusLabel.text = getString(R.string.call_ended)
             finish()
         }
+    }
+
+    // ---- Auto-answer countdown UI ----
+
+    private val autoAnswerCountdownPoller = object : Runnable {
+        override fun run() {
+            val countdown = CallManager.autoAnswerCountdown
+            if (countdown > 0) {
+                binding.autoAnswerCountdownLabel.text = getString(R.string.auto_answer_countdown, countdown)
+                binding.autoAnswerCountdownLabel.beVisible()
+                binding.autoAnswerSkipButton.beVisible()
+                isAutoAnswerCountdownActive = true
+                autoAnswerCountdownHandler.postDelayed(this, 300)
+            } else {
+                hideAutoAnswerCountdownUI()
+            }
+        }
+    }
+
+    private fun startAutoAnswerCountdownPolling() {
+        // Check if there's an active countdown
+        if (CallManager.autoAnswerCountdown > 0) {
+            autoAnswerCountdownPoller.run()
+        } else {
+            // Poll briefly in case the countdown starts slightly after the UI
+            autoAnswerCountdownHandler.postDelayed({
+                if (CallManager.autoAnswerCountdown > 0) {
+                    autoAnswerCountdownPoller.run()
+                }
+            }, 500)
+        }
+    }
+
+    private fun hideAutoAnswerCountdownUI() {
+        isAutoAnswerCountdownActive = false
+        autoAnswerCountdownHandler.removeCallbacks(autoAnswerCountdownPoller)
+        binding.autoAnswerCountdownLabel.beGone()
+        binding.autoAnswerSkipButton.beGone()
+    }
+
+    /**
+     * Cancel the auto-answer countdown in both the UI and the service.
+     */
+    private fun cancelAutoAnswerCountdownAndService() {
+        hideAutoAnswerCountdownUI()
+        (CallManager.inCallService as? com.simplemobiletools.dialer.services.CallService)?.cancelAutoAnswer()
     }
 
     private val callCallback = object : CallManagerListener {

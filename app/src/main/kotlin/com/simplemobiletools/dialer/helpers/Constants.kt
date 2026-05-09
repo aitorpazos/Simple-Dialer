@@ -22,6 +22,7 @@ const val ALWAYS_SHOW_FULLSCREEN = "always_show_fullscreen"
 const val CALL_RECORDING_ENABLED = "call_recording_enabled"
 const val CALL_RECORDING_PATH = "call_recording_path"
 const val AUTO_ANSWER_MODE = "auto_answer_mode"
+const val AUTO_ANSWER_DELAY_SECONDS = "auto_answer_delay_seconds"
 const val AUTO_ANSWER_GREETING = "auto_answer_greeting"
 const val NOTIFICATION_ACTION_PLAY_RECORDING = "notification_action_play_recording"
 const val NOTIFICATION_ACTION_SHARE = "notification_action_share"
@@ -36,6 +37,9 @@ const val AUTO_ANSWER_UNKNOWN = 2
 
 // Default greeting for auto-answer TTS
 const val DEFAULT_AUTO_ANSWER_GREETING = "Hello, this call is being answered automatically. Please leave your message after the tone."
+
+// Default auto-answer delay (seconds); 0 = answer immediately (1s internal delay)
+const val DEFAULT_AUTO_ANSWER_DELAY = 0
 
 const val ALL_TABS_MASK = TAB_CONTACTS or TAB_FAVORITES or TAB_CALL_HISTORY
 

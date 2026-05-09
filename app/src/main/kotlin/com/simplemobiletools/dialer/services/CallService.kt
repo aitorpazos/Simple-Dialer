@@ -41,6 +41,8 @@ class CallService : InCallService() {
     private var wasAutoAnswered = false
     private var isListeningIn = false
     private var currentSimId: String = ""
+    private var autoAnswerRunnable: Runnable? = null
+    private var autoAnswerCountdown = 0
 
     private val callListener = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
@@ -86,6 +88,7 @@ class CallService : InCallService() {
 
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
+        cancelAutoAnswer()
         call.unregisterCallback(callListener)
         val wasPrimaryCall = call == CallManager.getPrimaryCall()
         CallManager.onCallRemoved(call)
@@ -158,35 +161,74 @@ class CallService : InCallService() {
         val autoAnswerMode = config.autoAnswerMode
         if (autoAnswerMode == AUTO_ANSWER_NONE) return
 
-        when (autoAnswerMode) {
-            AUTO_ANSWER_ALL -> {
-                // Auto-answer after a short delay to let the UI show
-                handler.postDelayed({
+        val shouldAnswer = { doAnswer: () -> Unit ->
+            val delaySeconds = config.autoAnswerDelaySeconds
+            if (delaySeconds <= 0) {
+                // Instant mode: answer after a short delay to let the UI show
+                val runnable = Runnable {
                     if (call.getStateCompat() == Call.STATE_RINGING) {
                         wasAutoAnswered = true
                         call.answer(VideoProfile.STATE_AUDIO_ONLY)
                     }
-                }, 1000)
+                }
+                autoAnswerRunnable = runnable
+                handler.postDelayed(runnable, 1000)
+            } else {
+                // Countdown mode: give user time to skip
+                autoAnswerCountdown = delaySeconds
+                CallManager.autoAnswerCountdown = autoAnswerCountdown
+                val countdownRunnable = object : Runnable {
+                    override fun run() {
+                        if (call.getStateCompat() != Call.STATE_RINGING) {
+                            cancelAutoAnswer()
+                            return
+                        }
+                        autoAnswerCountdown--
+                        CallManager.autoAnswerCountdown = autoAnswerCountdown
+                        if (autoAnswerCountdown <= 0) {
+                            wasAutoAnswered = true
+                            autoAnswerRunnable = null
+                            CallManager.autoAnswerCountdown = -1
+                            call.answer(VideoProfile.STATE_AUDIO_ONLY)
+                        } else {
+                            handler.postDelayed(this, 1000)
+                        }
+                    }
+                }
+                autoAnswerRunnable = countdownRunnable
+                handler.postDelayed(countdownRunnable, 1000)
             }
+        }
+
+        when (autoAnswerMode) {
+            AUTO_ANSWER_ALL -> shouldAnswer {}
             AUTO_ANSWER_UNKNOWN -> {
-                // Check if caller is unknown (not in contacts)
                 getCallContact(this, call) { contact ->
                     val isUnknown = contact.name.isEmpty() || contact.name == contact.number
                     if (isUnknown) {
-                        handler.postDelayed({
-                            if (call.getStateCompat() == Call.STATE_RINGING) {
-                                wasAutoAnswered = true
-                                call.answer(VideoProfile.STATE_AUDIO_ONLY)
-                            }
-                        }, 1000)
+                        shouldAnswer {}
                     }
                 }
             }
         }
     }
 
+    /**
+     * Cancel any pending auto-answer countdown. Called when the user
+     * manually answers or declines the call during the delay.
+     */
+    fun cancelAutoAnswer() {
+        autoAnswerRunnable?.let { handler.removeCallbacks(it) }
+        autoAnswerRunnable = null
+        autoAnswerCountdown = 0
+        CallManager.autoAnswerCountdown = -1
+    }
+
     private fun onCallActive(call: Call) {
         callStartTimeMs = System.currentTimeMillis()
+
+        // Cancel any pending auto-answer countdown since the call is now active
+        cancelAutoAnswer()
 
         // Play greeting if this was an auto-answered call
         if (wasAutoAnswered) {
@@ -326,6 +368,8 @@ class CallService : InCallService() {
         wasAutoAnswered = false
         isListeningIn = false
         currentSimId = ""
+        autoAnswerRunnable = null
+        autoAnswerCountdown = 0
     }
 
     // ---- Silent / DND detection ----

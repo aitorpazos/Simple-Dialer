@@ -137,6 +137,7 @@ class SettingsActivity : SimpleActivity() {
         setupCallTranscription()
         setupNotificationActions()
         setupAutoAnswer()
+        setupAutoAnswerDelay()
         setupAutoAnswerGreeting()
         setupPreviewGreeting()
         setupListenIn()
@@ -657,12 +658,41 @@ class SettingsActivity : SimpleActivity() {
 
     private fun updateAutoAnswerSettingsVisibility() {
         val enabled = config.autoAnswerMode != AUTO_ANSWER_NONE
+        binding.settingsAutoAnswerDelayHolder.beVisibleIf(enabled)
         binding.settingsAutoAnswerGreetingHolder.beVisibleIf(enabled)
         binding.settingsPreviewGreetingHolder.beVisibleIf(enabled)
         binding.settingsListenInHolder.beVisibleIf(enabled)
         binding.settingsTtsEngineHolder.beVisibleIf(enabled)
         binding.settingsTtsLanguageHolder.beVisibleIf(enabled)
         binding.settingsPerSimContainer.beVisibleIf(enabled)
+    }
+
+    private fun setupAutoAnswerDelay() {
+        binding.settingsAutoAnswerDelay.text = getAutoAnswerDelayText()
+        binding.settingsAutoAnswerDelayHolder.setOnClickListener {
+            val items = arrayListOf(
+                RadioItem(0, getString(R.string.auto_answer_delay_instant)),
+                RadioItem(3, getString(R.string.auto_answer_delay_value, 3)),
+                RadioItem(5, getString(R.string.auto_answer_delay_value, 5)),
+                RadioItem(10, getString(R.string.auto_answer_delay_value, 10)),
+                RadioItem(15, getString(R.string.auto_answer_delay_value, 15)),
+                RadioItem(30, getString(R.string.auto_answer_delay_value, 30))
+            )
+
+            RadioGroupDialog(this@SettingsActivity, items, config.autoAnswerDelaySeconds) {
+                config.autoAnswerDelaySeconds = it as Int
+                binding.settingsAutoAnswerDelay.text = getAutoAnswerDelayText()
+            }
+        }
+    }
+
+    private fun getAutoAnswerDelayText(): String {
+        val seconds = config.autoAnswerDelaySeconds
+        return if (seconds <= 0) {
+            getString(R.string.auto_answer_delay_instant)
+        } else {
+            getString(R.string.auto_answer_delay_value, seconds)
+        }
     }
 
     private fun setupAutoAnswerGreeting() {

@@ -103,6 +103,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getInt(AUTO_ANSWER_MODE, AUTO_ANSWER_NONE)
         set(autoAnswerMode) = prefs.edit().putInt(AUTO_ANSWER_MODE, autoAnswerMode).apply()
 
+    var autoAnswerDelaySeconds: Int
+        get() = prefs.getInt(AUTO_ANSWER_DELAY_SECONDS, DEFAULT_AUTO_ANSWER_DELAY)
+        set(value) = prefs.edit().putInt(AUTO_ANSWER_DELAY_SECONDS, value).apply()
+
     var autoAnswerGreeting: String
         get() = prefs.getString(AUTO_ANSWER_GREETING, DEFAULT_AUTO_ANSWER_GREETING) ?: DEFAULT_AUTO_ANSWER_GREETING
         set(autoAnswerGreeting) = prefs.edit().putString(AUTO_ANSWER_GREETING, autoAnswerGreeting).apply()

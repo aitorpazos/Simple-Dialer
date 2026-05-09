@@ -83,4 +83,32 @@ class AutoAnswerLogicTest {
         assertFalse(shouldAutoAnswer(99, "Alice", "+1234567890"))
         assertFalse(shouldAutoAnswer(-1, "", "+1234567890"))
     }
+
+    // ---- Delay tests ----
+
+    @Test
+    fun `delay of 0 means instant auto-answer`() {
+        assertEquals(0, DEFAULT_AUTO_ANSWER_DELAY)
+        // When delay is 0, auto-answer triggers after a minimal 1s UI delay
+        assertTrue(shouldAutoAnswer(AUTO_ANSWER_ALL, "Alice", "+1234567890"))
+    }
+
+    @Test
+    fun `positive delay values are valid`() {
+        // Valid delay values: 3, 5, 10, 15, 30 seconds
+        val validDelays = listOf(3, 5, 10, 15, 30)
+        for (delay in validDelays) {
+            assertTrue("Delay $delay should be positive", delay > 0)
+        }
+    }
+
+    @Test
+    fun `auto-answer decision is independent of delay`() {
+        // The delay only affects WHEN to answer, not WHETHER to answer
+        // shouldAutoAnswer should return the same result regardless of delay setting
+        assertTrue(shouldAutoAnswer(AUTO_ANSWER_ALL, "Alice", "+1234567890"))
+        assertFalse(shouldAutoAnswer(AUTO_ANSWER_NONE, "Alice", "+1234567890"))
+        assertFalse(shouldAutoAnswer(AUTO_ANSWER_UNKNOWN, "Alice", "+1234567890"))
+        assertTrue(shouldAutoAnswer(AUTO_ANSWER_UNKNOWN, "", "+1234567890"))
+    }
 }

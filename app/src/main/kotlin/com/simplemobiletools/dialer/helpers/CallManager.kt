@@ -21,6 +21,14 @@ class CallManager {
         private val calls = mutableListOf<Call>()
         private val listeners = CopyOnWriteArraySet<CallManagerListener>()
 
+        /**
+         * Seconds remaining until auto-answer triggers.
+         * -1 means no auto-answer countdown is active.
+         * Updated by CallService, observed by CallActivity.
+         */
+        @Volatile
+        var autoAnswerCountdown: Int = -1
+
         fun onCallAdded(call: Call) {
             this.call = call
             calls.add(call)

@@ -1,5 +1,8 @@
 package com.simplemobiletools.dialer.dialogs
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.util.Log
 import android.view.View
@@ -12,7 +15,6 @@ import com.simplemobiletools.commons.extensions.setupDialogStuff
 import com.simplemobiletools.commons.extensions.viewBinding
 import com.simplemobiletools.dialer.R
 import com.simplemobiletools.dialer.activities.SimpleActivity
-import com.simplemobiletools.dialer.activities.TranscriptionViewActivity
 import com.simplemobiletools.dialer.adapters.RecentCallsAdapter
 import com.simplemobiletools.dialer.databinding.DialogShowGroupedCallsBinding
 import com.simplemobiletools.dialer.helpers.*
@@ -173,15 +175,32 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
             Toast.makeText(activity, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
             return
         }
-        try {
-            val intent = Intent(activity, TranscriptionViewActivity::class.java).apply {
-                putExtra(EXTRA_CONTACT_NAME, call.name)
-                putExtra(EXTRA_RECORDING_NAME, recordingName)
-            }
-            activity.startActivity(intent)
-        } catch (_: Exception) {
-            Toast.makeText(activity, R.string.transcription_not_available, Toast.LENGTH_SHORT).show()
+
+        val textColor = activity.getProperTextColor()
+
+        // Show inline transcription viewer
+        binding.transcriptionViewerHolder.visibility = View.VISIBLE
+        binding.transcriptionViewerLabel.setTextColor(textColor)
+        binding.transcriptionViewerLabel.text = if (call.name.isNotEmpty()) {
+            activity.getString(R.string.transcription_dialog_title, call.name)
+        } else {
+            activity.getString(R.string.transcription_dialog_title_generic)
         }
+        binding.transcriptionViewerText.text = text
+        binding.transcriptionViewerText.setTextColor(textColor)
+
+        // Copy button
+        binding.btnCopyTranscriptionIcon.setColorFilter(textColor)
+        binding.btnCopyTranscriptionLabel.setTextColor(textColor)
+        binding.btnCopyTranscription.setOnClickListener {
+            val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Call Transcription", text)
+            clipboard.setPrimaryClip(clip)
+            Toast.makeText(activity, R.string.transcription_copied_to_clipboard, Toast.LENGTH_SHORT).show()
+        }
+
+        // Hide the "Show transcription" button since it's now visible
+        binding.btnShowTranscription.visibility = View.GONE
     }
 
     private fun shareTranscription(recordingName: String, call: RecentCall) {

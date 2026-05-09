@@ -325,6 +325,37 @@
         android:layout_height="match_parent"
         android:visibility="gone">
 
+        <com.simplemobiletools.commons.views.MyTextView
+            android:id="@+id/auto_answer_countdown_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/big_margin"
+            android:textSize="@dimen/bigger_text_size"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/auto_answer_skip_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:text="Auto-answering in 5s…"
+            tools:visibility="visible" />
+
+        <com.simplemobiletools.commons.views.MyTextView
+            android:id="@+id/auto_answer_skip_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/big_margin"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:paddingStart="@dimen/big_margin"
+            android:paddingTop="@dimen/small_margin"
+            android:paddingEnd="@dimen/big_margin"
+            android:paddingBottom="@dimen/small_margin"
+            android:text="@string/auto_answer_skip"
+            android:textSize="@dimen/bigger_text_size"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/call_decline"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:visibility="visible" />
+
         <ImageView
             android:id="@+id/call_decline"
             android:layout_width="@dimen/incoming_call_button_size"

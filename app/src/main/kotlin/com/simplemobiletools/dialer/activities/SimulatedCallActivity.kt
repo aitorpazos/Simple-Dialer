@@ -80,7 +80,13 @@ class SimulatedCallActivity : AppCompatActivity() {
     }
 
     private fun startAutoAnswerCountdown() {
-        autoAnswerCountdown = 3
+        val delaySeconds = config.autoAnswerDelaySeconds
+        if (delaySeconds <= 0) {
+            // Instant mode: answer after a short 3-second countdown (simulated call visual feedback)
+            autoAnswerCountdown = 3
+        } else {
+            autoAnswerCountdown = delaySeconds
+        }
         updateCountdownText()
         handler.postDelayed(object : Runnable {
             override fun run() {
