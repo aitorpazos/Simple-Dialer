@@ -287,20 +287,41 @@ class TranscriptionService : Service() {
 
     /**
      * Decode audio using MediaExtractor + MediaCodec (for m4a/AAC and other formats).
+     *
+     * All resources (ParcelFileDescriptor, MediaExtractor, MediaCodec) are released
+     * in finally blocks so nothing leaks on error paths.
      */
     private fun decodeWithMediaCodec(uri: Uri): ByteArray? {
-        // ParcelFileDescriptor must stay open while MediaExtractor reads from it.
-        // Closing it early invalidates the underlying FileDescriptor and causes crashes.
         var pfd: android.os.ParcelFileDescriptor? = null
-        try {
-            val extractor = MediaExtractor()
+        var extractor: MediaExtractor? = null
+        var codec: MediaCodec? = null
 
-            // Handle both content:// and file:// URIs
-            if (uri.scheme == "content") {
-                pfd = contentResolver.openFileDescriptor(uri, "r") ?: return null
-                extractor.setDataSource(pfd.fileDescriptor)
-            } else {
-                extractor.setDataSource(uri.path!!)
+        try {
+            extractor = MediaExtractor()
+
+            // Handle content://, file://, and raw path URIs
+            when (uri.scheme) {
+                "content" -> {
+                    pfd = contentResolver.openFileDescriptor(uri, "r")
+                    if (pfd == null) {
+                        Log.e(TAG, "openFileDescriptor returned null for: $uri")
+                        return null
+                    }
+                    extractor.setDataSource(pfd.fileDescriptor)
+                }
+                "file" -> {
+                    val path = uri.path
+                    if (path == null) {
+                        Log.e(TAG, "file:// URI has null path: $uri")
+                        return null
+                    }
+                    extractor.setDataSource(path)
+                }
+                else -> {
+                    // Treat as raw file path
+                    val path = uri.path ?: uri.toString()
+                    extractor.setDataSource(path)
+                }
             }
 
             // Find audio track
@@ -315,8 +336,7 @@ class TranscriptionService : Service() {
             }
 
             if (audioTrackIndex < 0) {
-                Log.e(TAG, "No audio track found")
-                extractor.release()
+                Log.e(TAG, "No audio track found in: $uri")
                 return null
             }
 
@@ -329,7 +349,7 @@ class TranscriptionService : Service() {
             Log.d(TAG, "Audio: $mime, ${sampleRate}Hz, ${channelCount}ch")
 
             // Create decoder
-            val codec = MediaCodec.createDecoderByType(mime)
+            codec = MediaCodec.createDecoderByType(mime)
             codec.configure(format, null, null, 0)
             codec.start()
 
@@ -371,10 +391,6 @@ class TranscriptionService : Service() {
                 }
             }
 
-            codec.stop()
-            codec.release()
-            extractor.release()
-
             val rawPcm = outputStream.toByteArray()
 
             // Convert to mono if stereo
@@ -392,9 +408,12 @@ class TranscriptionService : Service() {
             }
 
         } catch (e: Exception) {
-            Log.e(TAG, "Audio decode failed", e)
+            Log.e(TAG, "Audio decode failed for: $uri", e)
             return null
         } finally {
+            try { codec?.stop() } catch (_: Exception) {}
+            try { codec?.release() } catch (_: Exception) {}
+            try { extractor?.release() } catch (_: Exception) {}
             try { pfd?.close() } catch (_: Exception) {}
         }
     }

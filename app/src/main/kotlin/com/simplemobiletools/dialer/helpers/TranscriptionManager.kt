@@ -115,11 +115,40 @@ class TranscriptionManager(private val context: Context) {
     }
 
     /**
-     * Get a shareable URI for a recording by name.
+     * Get a URI for a recording by name, for use within this app.
+     * Returns file:// for default dir, SAF content:// for custom dir.
      * Checks both default directory and custom SAF directory.
+     *
+     * NOTE: For sharing with other apps, use [getShareableRecordingUri] instead
+     * which wraps default-dir files in a FileProvider URI.
      */
     fun getRecordingUriByName(recordingName: String): Uri? {
-        // Check default directory first
+        // Check default directory first — use file:// for within-app access
+        val file = File(getDefaultTranscriptionsDir(), recordingName)
+        if (file.exists()) {
+            return Uri.fromFile(file)
+        }
+
+        // Check custom SAF directory — returns content:// document URI
+        val customUriString = context.config.callRecordingPath
+        if (customUriString.isNotEmpty()) {
+            try {
+                val treeUri = Uri.parse(customUriString)
+                val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
+                val doc = treeDoc?.listFiles()?.firstOrNull { it.name == recordingName }
+                if (doc != null) return doc.uri
+            } catch (_: Exception) {}
+        }
+
+        return null
+    }
+
+    /**
+     * Get a shareable URI for a recording (for sharing with other apps via Intent).
+     * Wraps default-dir files in FileProvider; SAF URIs are already shareable.
+     */
+    fun getShareableRecordingUri(recordingName: String): Uri? {
+        // Check default directory — wrap in FileProvider for cross-app sharing
         val file = File(getDefaultTranscriptionsDir(), recordingName)
         if (file.exists()) {
             return try {
