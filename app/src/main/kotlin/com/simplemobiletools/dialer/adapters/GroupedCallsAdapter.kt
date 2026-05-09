@@ -33,7 +33,7 @@ class GroupedCallsAdapter(
 
     private var expandedPosition = -1
     private val textColor = activity.getProperTextColor()
-    private val redColor = activity.resources.getColor(R.color.md_red_700)
+    private val redColor = androidx.core.content.ContextCompat.getColor(activity, R.color.md_red_700)
 
     private val outgoingCallIcon: Drawable =
         activity.resources.getColoredDrawableWithColor(R.drawable.ic_outgoing_call_vector, textColor)
@@ -98,7 +98,7 @@ class GroupedCallsAdapter(
         binding.groupedCallRow.setOnClickListener {
             if (!hasRecording) return@setOnClickListener
 
-            val adapterPosition = holder.adapterPosition
+            val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition == RecyclerView.NO_POSITION) return@setOnClickListener
 
             val previousExpanded = expandedPosition
@@ -188,6 +188,7 @@ class GroupedCallsAdapter(
         }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun shareRecording(recordingName: String, call: RecentCall) {
         val uri = transcriptionManager.getShareableRecordingUri(recordingName)
         if (uri == null) {
