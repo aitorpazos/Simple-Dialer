@@ -289,14 +289,16 @@ class TranscriptionService : Service() {
      * Decode audio using MediaExtractor + MediaCodec (for m4a/AAC and other formats).
      */
     private fun decodeWithMediaCodec(uri: Uri): ByteArray? {
+        // ParcelFileDescriptor must stay open while MediaExtractor reads from it.
+        // Closing it early invalidates the underlying FileDescriptor and causes crashes.
+        var pfd: android.os.ParcelFileDescriptor? = null
         try {
             val extractor = MediaExtractor()
 
             // Handle both content:// and file:// URIs
             if (uri.scheme == "content") {
-                val pfd = contentResolver.openFileDescriptor(uri, "r") ?: return null
+                pfd = contentResolver.openFileDescriptor(uri, "r") ?: return null
                 extractor.setDataSource(pfd.fileDescriptor)
-                pfd.close()
             } else {
                 extractor.setDataSource(uri.path!!)
             }
@@ -392,6 +394,8 @@ class TranscriptionService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Audio decode failed", e)
             return null
+        } finally {
+            try { pfd?.close() } catch (_: Exception) {}
         }
     }
 
