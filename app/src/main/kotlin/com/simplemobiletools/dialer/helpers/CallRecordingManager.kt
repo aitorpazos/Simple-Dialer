@@ -1,6 +1,7 @@
 package com.simplemobiletools.dialer.helpers
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.media.MediaRecorder
 import android.net.Uri
@@ -16,31 +17,29 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Call recording manager with accessibility-service-aware audio source selection.
+ * Call recording manager with intelligent audio source selection.
  *
- * On many Android devices (Android 9+), the VOICE_CALL audio source is blocked for
- * third-party apps, resulting in files that have the correct duration but contain
- * silence. When the user enables our AccessibilityService, several OEMs (Samsung,
- * Xiaomi, OnePlus, Pixel, etc.) unlock the VOICE_CALL source for the default dialer,
- * allowing reliable capture of both sides of the conversation.
+ * Audio capture on Android depends on three factors:
+ *   1. Whether the app holds CAPTURE_AUDIO_OUTPUT (signature/privileged permission)
+ *   2. Whether the accessibility service is enabled (unlocks VOICE_CALL on some OEMs)
+ *   3. The device's audio HAL behaviour
  *
- * Audio source priority when accessibility service is enabled:
- *   1. VOICE_CALL          — both sides, most reliable with accessibility
- *   2. VOICE_COMMUNICATION — VoIP-style capture, works on some devices
- *   3. VOICE_RECOGNITION   — high-quality mic, sometimes captures call audio
- *   4. MIC                 — always works but only captures local side
+ * When CAPTURE_AUDIO_OUTPUT is granted (privileged system app):
+ *   - VOICE_CALL works reliably on virtually all devices — captures both sides
+ *   - No accessibility service needed for audio capture
  *
- * Without accessibility service (legacy fallback):
- *   1. VOICE_CALL          — may work on some OEMs
- *   2. MIC                 — guaranteed to work (local side only)
- *   3. VOICE_COMMUNICATION — last resort
+ * When only accessibility service is enabled (non-privileged):
+ *   - VOICE_CALL may work on some OEMs (Samsung, Xiaomi, OnePlus)
+ *   - Falls back through VOICE_COMMUNICATION → VOICE_RECOGNITION → MIC
  *
- * Key reliability improvements:
- *   - Sets AudioManager mode to MODE_IN_CALL before recording to ensure the
- *     audio framework routes call audio to the recorder.
- *   - Restores the original audio mode if recording fails.
- *   - Uses 16kHz sample rate (telephony standard) instead of 44.1kHz for better
- *     compatibility with VOICE_CALL source on constrained audio HALs.
+ * Without either:
+ *   - VOICE_CALL rarely works
+ *   - MIC captures local side only
+ *
+ * IMPORTANT: We do NOT override AudioManager.mode. On Android 10+ the telecom
+ * framework owns audio mode during calls. Overriding it can cause the audio HAL
+ * to reset routing, resulting in silence. The system already sets MODE_IN_CALL
+ * when a telephony call is active.
  */
 class CallRecordingManager(private val context: Context) {
     companion object {
@@ -59,7 +58,6 @@ class CallRecordingManager(private val context: Context) {
     private var parcelFd: ParcelFileDescriptor? = null
     private var isRecording = false
     private var activeAudioSource: String? = null
-    private var originalAudioMode: Int = AudioManager.MODE_NORMAL
 
     private fun getDefaultRecordingsDir(): File {
         val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
@@ -79,58 +77,80 @@ class CallRecordingManager(private val context: Context) {
     }
 
     /**
-     * Build the audio source priority list based on whether the accessibility
-     * service is currently enabled.
+     * Check if the app has CAPTURE_AUDIO_OUTPUT permission granted.
+     * This is a signature/privileged permission — only granted to system apps
+     * or apps signed with the platform key.
      */
-    private fun getAudioSourcePriority(): List<Pair<Int, String>> {
-        val accessibilityEnabled = CallRecordingAccessibilityService.isServiceEnabled(context)
-
-        return if (accessibilityEnabled) {
-            listOf(
-                MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
-                MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
-                MediaRecorder.AudioSource.VOICE_RECOGNITION to "VOICE_RECOGNITION",
-                MediaRecorder.AudioSource.MIC to "MIC",
-            )
-        } else {
-            listOf(
-                MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
-                MediaRecorder.AudioSource.MIC to "MIC",
-                MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
-            )
-        }
+    private fun hasCaptureAudioOutput(): Boolean {
+        return context.checkSelfPermission(android.Manifest.permission.CAPTURE_AUDIO_OUTPUT) ==
+            PackageManager.PERMISSION_GRANTED
     }
 
     /**
-     * Ensure the audio framework is in the right mode for call recording.
-     * This is critical — many devices only route call audio to the recorder
-     * when AudioManager.mode is MODE_IN_CALL or MODE_IN_COMMUNICATION.
+     * Build the audio source priority list based on available permissions.
+     *
+     * With CAPTURE_AUDIO_OUTPUT: VOICE_CALL is reliable, no fallback needed
+     * (but we still include fallbacks for robustness).
+     *
+     * With accessibility service only: try VOICE_CALL first, then fallbacks.
+     *
+     * Without either: VOICE_CALL unlikely to work, MIC is the safe bet.
      */
-    private fun ensureAudioModeForRecording() {
-        try {
-            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            originalAudioMode = audioManager.mode
-            // MODE_IN_CALL tells the audio HAL that a telephony call is active,
-            // which is required for VOICE_CALL source to capture both sides.
-            if (audioManager.mode != AudioManager.MODE_IN_CALL &&
-                audioManager.mode != AudioManager.MODE_IN_COMMUNICATION) {
-                audioManager.mode = AudioManager.MODE_IN_CALL
-                Log.d(TAG, "Set audio mode to MODE_IN_CALL (was $originalAudioMode)")
+    private fun getAudioSourcePriority(): List<Pair<Int, String>> {
+        val hasCapturePermission = hasCaptureAudioOutput()
+        val accessibilityEnabled = CallRecordingAccessibilityService.isServiceEnabled(context)
+
+        Log.d(TAG, "Audio source selection: CAPTURE_AUDIO_OUTPUT=$hasCapturePermission, " +
+            "accessibility=$accessibilityEnabled")
+
+        return when {
+            hasCapturePermission -> {
+                // Best case: privileged app with CAPTURE_AUDIO_OUTPUT
+                // VOICE_CALL is guaranteed to work
+                listOf(
+                    MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
+                    MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
+                    MediaRecorder.AudioSource.MIC to "MIC",
+                )
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Could not set audio mode: ${e.message}")
+            accessibilityEnabled -> {
+                // Accessibility service may unlock VOICE_CALL on some OEMs
+                listOf(
+                    MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
+                    MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
+                    MediaRecorder.AudioSource.VOICE_RECOGNITION to "VOICE_RECOGNITION",
+                    MediaRecorder.AudioSource.MIC to "MIC",
+                )
+            }
+            else -> {
+                // No special permissions — MIC is the most reliable
+                listOf(
+                    MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
+                    MediaRecorder.AudioSource.MIC to "MIC",
+                    MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
+                )
+            }
         }
     }
 
     /**
      * Try each audio source in priority order until one successfully starts.
+     *
+     * Note: We do NOT touch AudioManager.mode. On Android 10+ the telecom
+     * framework manages audio mode during calls. Overriding it interferes
+     * with audio routing and can cause silence.
      */
     private fun startWithFallbackChain(configureOutput: (MediaRecorder) -> Unit): Boolean {
         val sources = getAudioSourcePriority()
-        val accessibilityEnabled = CallRecordingAccessibilityService.isServiceEnabled(context)
 
-        // Ensure audio mode is correct before attempting to start recording
-        ensureAudioModeForRecording()
+        // Log current audio state for diagnostics
+        try {
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            Log.d(TAG, "Current audio state: mode=${audioManager.mode}, " +
+                "isMusicActive=${audioManager.isMusicActive}")
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not read audio state: ${e.message}")
+        }
 
         for ((source, sourceName) in sources) {
             try {
@@ -150,8 +170,10 @@ class CallRecordingManager(private val context: Context) {
                 }
 
                 activeAudioSource = sourceName
-                Log.i(TAG, "Recording started — source=$sourceName, accessibility=$accessibilityEnabled, " +
-                    "sampleRate=$SAMPLE_RATE, audioMode=${(context.getSystemService(Context.AUDIO_SERVICE) as AudioManager).mode}")
+                Log.i(TAG, "Recording started — source=$sourceName, " +
+                    "captureAudioOutput=${hasCaptureAudioOutput()}, " +
+                    "accessibility=${CallRecordingAccessibilityService.isServiceEnabled(context)}, " +
+                    "sampleRate=$SAMPLE_RATE")
                 return true
             } catch (e: Exception) {
                 Log.w(TAG, "Audio source $sourceName failed: ${e.message}")
@@ -160,7 +182,7 @@ class CallRecordingManager(private val context: Context) {
             }
         }
 
-        Log.e(TAG, "All audio sources failed — cannot record (accessibility=$accessibilityEnabled)")
+        Log.e(TAG, "All audio sources failed — cannot record")
         return false
     }
 
