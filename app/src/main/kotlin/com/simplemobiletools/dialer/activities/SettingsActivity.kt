@@ -133,6 +133,7 @@ class SettingsActivity : SimpleActivity() {
         setupAccessibilityService()
         setupRecordingSetupGuide()
         setupCallRecordingPath()
+        setupCallRecordingAudioSource()
         setupOpenRecordingsFolder()
         setupCallTranscription()
         setupNotificationActions()
@@ -1175,6 +1176,51 @@ class SettingsActivity : SimpleActivity() {
                 }
             }
         }
+    }
+
+    private fun setupCallRecordingAudioSource() {
+        updateAudioSourceLabel()
+
+        binding.settingsCallRecordingAudioSourceHolder.setOnClickListener {
+            val items = arrayListOf(
+                RadioItem(0, getString(R.string.audio_source_auto)),
+                RadioItem(1, getString(R.string.audio_source_voice_call)),
+                RadioItem(2, getString(R.string.audio_source_voice_communication)),
+                RadioItem(3, getString(R.string.audio_source_voice_recognition)),
+                RadioItem(4, getString(R.string.audio_source_mic))
+            )
+
+            val currentIndex = when (config.callRecordingAudioSource) {
+                AUDIO_SOURCE_AUTO -> 0
+                AUDIO_SOURCE_VOICE_CALL -> 1
+                AUDIO_SOURCE_VOICE_COMMUNICATION -> 2
+                AUDIO_SOURCE_VOICE_RECOGNITION -> 3
+                AUDIO_SOURCE_MIC -> 4
+                else -> 0
+            }
+
+            RadioGroupDialog(this@SettingsActivity, items, currentIndex) {
+                config.callRecordingAudioSource = when (it as Int) {
+                    1 -> AUDIO_SOURCE_VOICE_CALL
+                    2 -> AUDIO_SOURCE_VOICE_COMMUNICATION
+                    3 -> AUDIO_SOURCE_VOICE_RECOGNITION
+                    4 -> AUDIO_SOURCE_MIC
+                    else -> AUDIO_SOURCE_AUTO
+                }
+                updateAudioSourceLabel()
+            }
+        }
+    }
+
+    private fun updateAudioSourceLabel() {
+        val label = when (config.callRecordingAudioSource) {
+            AUDIO_SOURCE_VOICE_CALL -> getString(R.string.audio_source_voice_call)
+            AUDIO_SOURCE_VOICE_COMMUNICATION -> getString(R.string.audio_source_voice_communication)
+            AUDIO_SOURCE_VOICE_RECOGNITION -> getString(R.string.audio_source_voice_recognition)
+            AUDIO_SOURCE_MIC -> getString(R.string.audio_source_mic)
+            else -> getString(R.string.audio_source_auto)
+        }
+        binding.settingsCallRecordingAudioSource.text = label
     }
 
     private fun setupNotificationActions() {

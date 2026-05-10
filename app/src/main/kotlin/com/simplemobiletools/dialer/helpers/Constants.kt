@@ -90,6 +90,14 @@ const val TTS_LANGUAGE = "tts_language"
 // Transcription settings
 const val CALL_TRANSCRIPTION_ENABLED = "call_transcription_enabled"
 
+// Call recording audio source setting
+const val CALL_RECORDING_AUDIO_SOURCE = "call_recording_audio_source"
+const val AUDIO_SOURCE_AUTO = "auto"
+const val AUDIO_SOURCE_VOICE_CALL = "voice_call"
+const val AUDIO_SOURCE_VOICE_COMMUNICATION = "voice_communication"
+const val AUDIO_SOURCE_VOICE_RECOGNITION = "voice_recognition"
+const val AUDIO_SOURCE_MIC = "mic"
+
 // Per-SIM auto-answer settings (stored as JSON map keyed by SIM id)
 const val PER_SIM_SETTINGS = "per_sim_settings"
 

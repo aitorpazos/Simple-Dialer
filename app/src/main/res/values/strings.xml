@@ -92,6 +92,14 @@
     <string name="call_recording_path_default">Default (app storage)</string>
     <string name="call_recording_path_change">Choose different folder</string>
 
+    <!-- Audio source selection -->
+    <string name="call_recording_audio_source">Recording audio source</string>
+    <string name="audio_source_auto">Auto (recommended)</string>
+    <string name="audio_source_voice_call">Voice Call (requires system permission)</string>
+    <string name="audio_source_voice_communication">Voice Communication</string>
+    <string name="audio_source_voice_recognition">Voice Recognition</string>
+    <string name="audio_source_mic">Microphone</string>
+
     <!-- Accessibility Service for Call Recording -->
     <string name="accessibility_service_label">Call Recording Audio</string>
     <string name="accessibility_service_description">Enables reliable call audio capture. This service allows the dialer to record both sides of phone calls. It does not read or interact with screen content.</string>

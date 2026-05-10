@@ -75,7 +75,9 @@ class CallActivity : SimpleActivity() {
 
         updateTextColors(binding.callHolder)
         initButtons()
-        audioManager.mode = AudioManager.MODE_IN_CALL
+        // Do NOT set audioManager.mode = MODE_IN_CALL here.
+        // On Android 10+ the telecom framework owns audio mode during calls.
+        // Overriding it interferes with audio routing and can cause recording silence.
         addLockScreenFlags()
         CallManager.addListener(callCallback)
         updateCallContactInfo(CallManager.getPrimaryCall())

@@ -19,27 +19,27 @@ import java.util.*
 /**
  * Call recording manager with intelligent audio source selection.
  *
- * Audio capture on Android depends on three factors:
+ * Audio capture on Android depends on:
  *   1. Whether the app holds CAPTURE_AUDIO_OUTPUT (signature/privileged permission)
- *   2. Whether the accessibility service is enabled (unlocks VOICE_CALL on some OEMs)
- *   3. The device's audio HAL behaviour
+ *   2. The device's audio HAL behaviour and ROM (OEM vs AOSP-based)
  *
  * When CAPTURE_AUDIO_OUTPUT is granted (privileged system app):
- *   - VOICE_CALL works reliably on virtually all devices — captures both sides
- *   - No accessibility service needed for audio capture
+ *   - VOICE_CALL works reliably — captures both sides
  *
- * When only accessibility service is enabled (non-privileged):
- *   - VOICE_CALL may work on some OEMs (Samsung, Xiaomi, OnePlus)
- *   - Falls back through VOICE_COMMUNICATION → VOICE_RECOGNITION → MIC
- *
- * Without either:
- *   - VOICE_CALL rarely works
- *   - MIC captures local side only
+ * When installed as a regular app (non-privileged):
+ *   - VOICE_CALL starts without error on AOSP/LineageOS/e!OS but captures SILENCE.
+ *     The accessibility service trick only unlocks VOICE_CALL on certain OEM ROMs
+ *     (Samsung, Xiaomi, OnePlus) — not on AOSP-based ROMs.
+ *   - Default "auto" mode skips VOICE_CALL and uses VOICE_COMMUNICATION → MIC.
+ *   - VOICE_COMMUNICATION captures the mic stream during a call.
+ *   - MIC always works and captures the local microphone (both sides audible
+ *     when speakerphone is on).
+ *   - User can override the audio source in Settings if their device supports
+ *     VOICE_CALL without CAPTURE_AUDIO_OUTPUT.
  *
  * IMPORTANT: We do NOT override AudioManager.mode. On Android 10+ the telecom
  * framework owns audio mode during calls. Overriding it can cause the audio HAL
- * to reset routing, resulting in silence. The system already sets MODE_IN_CALL
- * when a telephony call is active.
+ * to reset routing, resulting in silence.
  */
 class CallRecordingManager(private val context: Context) {
     companion object {
@@ -92,9 +92,19 @@ class CallRecordingManager(private val context: Context) {
      * With CAPTURE_AUDIO_OUTPUT: VOICE_CALL is reliable, no fallback needed
      * (but we still include fallbacks for robustness).
      *
-     * With accessibility service only: try VOICE_CALL first, then fallbacks.
+     * Without CAPTURE_AUDIO_OUTPUT (regular app install):
+     *   VOICE_CALL starts without error on AOSP/LineageOS/e!OS but captures
+     *   **silence** — the audio framework doesn't actually route call audio to
+     *   a non-privileged recorder. The accessibility service trick only works on
+     *   certain OEM ROMs (Samsung, Xiaomi, OnePlus).
      *
-     * Without either: VOICE_CALL unlikely to work, MIC is the safe bet.
+     *   On AOSP-based ROMs the best we can do is:
+     *   - VOICE_COMMUNICATION: captures mic + may capture some call audio on
+     *     devices where the audio HAL mixes it into the communication stream.
+     *   - MIC: always works, captures local microphone (both sides audible
+     *     when speakerphone is on).
+     *
+     * The user can also override the audio source manually in settings.
      */
     private fun getAudioSourcePriority(): List<Pair<Int, String>> {
         val hasCapturePermission = hasCaptureAudioOutput()
@@ -102,6 +112,16 @@ class CallRecordingManager(private val context: Context) {
 
         Log.d(TAG, "Audio source selection: CAPTURE_AUDIO_OUTPUT=$hasCapturePermission, " +
             "accessibility=$accessibilityEnabled")
+
+        // Check user override
+        val userOverride = context.config.callRecordingAudioSource
+        if (userOverride != AUDIO_SOURCE_AUTO) {
+            val source = audioSourceFromSetting(userOverride)
+            if (source != null) {
+                Log.d(TAG, "Using user-selected audio source: $userOverride")
+                return listOf(source)
+            }
+        }
 
         return when {
             hasCapturePermission -> {
@@ -113,23 +133,28 @@ class CallRecordingManager(private val context: Context) {
                     MediaRecorder.AudioSource.MIC to "MIC",
                 )
             }
-            accessibilityEnabled -> {
-                // Accessibility service may unlock VOICE_CALL on some OEMs
+            else -> {
+                // Non-privileged install (regular APK on /e/OS, LineageOS, stock AOSP).
+                // VOICE_CALL silently produces empty audio on these ROMs even with
+                // accessibility service enabled — skip it entirely.
+                // VOICE_COMMUNICATION captures the mic stream during a call and on
+                // some HALs includes the remote party; MIC is the safe fallback.
                 listOf(
-                    MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
                     MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
                     MediaRecorder.AudioSource.VOICE_RECOGNITION to "VOICE_RECOGNITION",
                     MediaRecorder.AudioSource.MIC to "MIC",
                 )
             }
-            else -> {
-                // No special permissions — MIC is the most reliable
-                listOf(
-                    MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
-                    MediaRecorder.AudioSource.MIC to "MIC",
-                    MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
-                )
-            }
+        }
+    }
+
+    private fun audioSourceFromSetting(setting: String): Pair<Int, String>? {
+        return when (setting) {
+            AUDIO_SOURCE_VOICE_CALL -> MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL"
+            AUDIO_SOURCE_VOICE_COMMUNICATION -> MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION"
+            AUDIO_SOURCE_VOICE_RECOGNITION -> MediaRecorder.AudioSource.VOICE_RECOGNITION to "VOICE_RECOGNITION"
+            AUDIO_SOURCE_MIC -> MediaRecorder.AudioSource.MIC to "MIC"
+            else -> null
         }
     }
 

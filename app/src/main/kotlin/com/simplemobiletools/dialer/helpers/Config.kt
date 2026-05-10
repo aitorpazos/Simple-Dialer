@@ -99,6 +99,10 @@ class Config(context: Context) : BaseConfig(context) {
         get() = prefs.getString(CALL_RECORDING_PATH, "") ?: ""
         set(callRecordingPath) = prefs.edit().putString(CALL_RECORDING_PATH, callRecordingPath).apply()
 
+    var callRecordingAudioSource: String
+        get() = prefs.getString(CALL_RECORDING_AUDIO_SOURCE, AUDIO_SOURCE_AUTO) ?: AUDIO_SOURCE_AUTO
+        set(value) = prefs.edit().putString(CALL_RECORDING_AUDIO_SOURCE, value).apply()
+
     var autoAnswerMode: Int
         get() = prefs.getInt(AUTO_ANSWER_MODE, AUTO_ANSWER_NONE)
         set(autoAnswerMode) = prefs.edit().putInt(AUTO_ANSWER_MODE, autoAnswerMode).apply()

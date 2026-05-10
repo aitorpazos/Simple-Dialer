@@ -637,6 +637,29 @@
             </RelativeLayout>
 
             <RelativeLayout
+                android:id="@+id/settings_call_recording_audio_source_holder"
+                style="@style/SettingsHolderTextViewStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_call_recording_audio_source_label"
+                    style="@style/SettingsTextLabelStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/call_recording_audio_source" />
+
+                <com.simplemobiletools.commons.views.MyTextView
+                    android:id="@+id/settings_call_recording_audio_source"
+                    style="@style/SettingsTextValueStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/settings_call_recording_audio_source_label"
+                    tools:text="Auto" />
+
+            </RelativeLayout>
+
+            <RelativeLayout
                 android:id="@+id/settings_open_recordings_folder_holder"
                 style="@style/SettingsHolderTextViewOneLinerStyle"
                 android:layout_width="match_parent"

@@ -290,17 +290,17 @@ class CallService : InCallService() {
 
     private fun startRecordingIfEnabled() {
         if (config.callRecordingEnabled) {
-            // Delay recording start slightly to let the audio framework
-            // fully route call audio after the call becomes active.
-            // Without this delay, VOICE_CALL source may capture silence
-            // because the audio HAL hasn't completed routing yet.
+            // Delay recording start to let the audio framework fully route
+            // call audio after the call becomes active. On AOSP-based ROMs
+            // (LineageOS, /e/OS) audio routing takes longer than on OEM ROMs.
+            // 1500ms is a safe margin that avoids initial silence.
             handler.postDelayed({
                 val number = currentCallNumber.ifEmpty { "unknown" }
                 val success = callRecordingManager.startRecording(number)
                 if (!success) {
                     currentRecordingResult = null
                 }
-            }, 500)
+            }, 1500)
         }
     }
 
