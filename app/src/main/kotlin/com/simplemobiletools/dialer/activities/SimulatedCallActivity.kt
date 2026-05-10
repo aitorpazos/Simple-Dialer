@@ -1,5 +1,6 @@
 package com.simplemobiletools.dialer.activities
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -13,9 +14,13 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.widget.Chronometer
-import androidx.appcompat.app.AppCompatActivity
+import android.view.MotionEvent
+import android.view.View
+import android.view.WindowManager
+import android.widget.ImageView
 import androidx.core.app.NotificationCompat
+import com.simplemobiletools.commons.extensions.*
+import com.simplemobiletools.commons.helpers.*
 import com.simplemobiletools.dialer.R
 import com.simplemobiletools.dialer.databinding.ActivitySimulatedCallBinding
 import com.simplemobiletools.dialer.extensions.config
@@ -23,8 +28,10 @@ import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.receivers.ActiveCallActionReceiver
 import com.simplemobiletools.dialer.services.TranscriptionService
 import java.io.File
+import kotlin.math.max
+import kotlin.math.min
 
-class SimulatedCallActivity : AppCompatActivity() {
+class SimulatedCallActivity : SimpleActivity() {
     companion object {
         private const val AUTO_DISCONNECT_MS = 15_000L
         private const val LISTEN_NOTIF_ID = ACTIVE_CALL_NOTIFICATION_ID
@@ -43,6 +50,9 @@ class SimulatedCallActivity : AppCompatActivity() {
     private var recordingResult: RecordingResult? = null
     private var simId: String? = null
     private var greetingAudioFile: File? = null
+    private var callDuration = 0
+    private var stopAnimation = false
+    private var dragDownX = 0f
 
     private enum class State { RINGING, ACTIVE, ENDED }
 
@@ -53,20 +63,19 @@ class SimulatedCallActivity : AppCompatActivity() {
 
         simId = intent.getStringExtra(EXTRA_SIM_ID)
 
-        binding.callerName.text = getString(R.string.simulated_call_caller)
-        binding.callerNumber.text = getString(R.string.simulated_call_number)
-        binding.callStatus.text = getString(R.string.simulated_call_ringing)
+        val cs = binding.callScreen
+        cs.callerNameLabel.text = getString(R.string.simulated_call_caller)
+        cs.callerNumber.text = getString(R.string.simulated_call_number)
+        cs.callStatusLabel.text = getString(R.string.simulated_call_ringing)
 
-        binding.answerButton.setOnClickListener { answerCall() }
-        binding.declineButton.setOnClickListener { endCall() }
-        binding.hangUpButton.setOnClickListener { endCall() }
+        updateTextColors(cs.callHolder)
+        initButtons()
+        addLockScreenFlags()
 
-        binding.hangUpButton.visibility = android.view.View.GONE
-        binding.callTimer.visibility = android.view.View.GONE
+        cs.incomingCallHolder.beVisible()
+        cs.ongoingCallHolder.beGone()
 
-        // Check auto-answer
-        val autoAnswerMode = config.autoAnswerMode
-        if (autoAnswerMode != AUTO_ANSWER_NONE) {
+        if (config.autoAnswerMode != AUTO_ANSWER_NONE) {
             startAutoAnswerCountdown()
         }
     }
@@ -79,15 +88,180 @@ class SimulatedCallActivity : AppCompatActivity() {
         dismissListenNotification()
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    private fun initButtons() {
+        val cs = binding.callScreen
+
+        if (config.disableSwipeToAnswer) {
+            cs.callDraggable.beGone()
+            cs.callDraggableBackground.beGone()
+            cs.callLeftArrow.beGone()
+            cs.callRightArrow.beGone()
+
+            cs.callDecline.setOnClickListener { endCall() }
+            cs.callAccept.setOnClickListener { answerCall() }
+        } else {
+            handleSwipe()
+        }
+
+        cs.callEnd.setOnClickListener { endCall() }
+
+        // Disable real-call-only buttons
+        cs.callToggleMicrophone.setOnClickListener { }
+        cs.callToggleSpeaker.setOnClickListener { }
+        cs.callDialpad.setOnClickListener { }
+        cs.callToggleHold.setOnClickListener { }
+        cs.callAdd.setOnClickListener { }
+
+        cs.autoAnswerSkipButton.setOnClickListener {
+            cancelAutoAnswerCountdown()
+        }
+
+        val bgColor = getProperBackgroundColor()
+        val inactiveColor = getProperTextColor().adjustAlpha(0.10f)
+        arrayOf(
+            cs.callToggleMicrophone, cs.callToggleSpeaker, cs.callDialpad,
+            cs.callToggleHold, cs.callAdd
+        ).forEach {
+            it.applyColorFilter(bgColor.getContrastColor())
+            it.background.applyColorFilter(inactiveColor)
+        }
+
+        cs.controlsSingleCall.beVisible()
+        cs.controlsTwoCalls.beGone()
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun handleSwipe() {
+        val cs = binding.callScreen
+        var minDragX = 0f
+        var maxDragX = 0f
+        var initialDraggableX = 0f
+        var initialLeftArrowX = 0f
+        var initialRightArrowX = 0f
+        var initialLeftArrowScaleX = 0f
+        var initialLeftArrowScaleY = 0f
+        var initialRightArrowScaleX = 0f
+        var initialRightArrowScaleY = 0f
+        var leftArrowTranslation = 0f
+        var rightArrowTranslation = 0f
+
+        val isRtl = isRTLLayout
+        cs.callAccept.onGlobalLayout {
+            minDragX = if (isRtl) cs.callAccept.left.toFloat() else cs.callDecline.left.toFloat()
+            maxDragX = if (isRtl) cs.callDecline.left.toFloat() else cs.callAccept.left.toFloat()
+            initialDraggableX = cs.callDraggable.left.toFloat()
+            initialLeftArrowX = cs.callLeftArrow.x
+            initialRightArrowX = cs.callRightArrow.x
+            initialLeftArrowScaleX = cs.callLeftArrow.scaleX
+            initialLeftArrowScaleY = cs.callLeftArrow.scaleY
+            initialRightArrowScaleX = cs.callRightArrow.scaleX
+            initialRightArrowScaleY = cs.callRightArrow.scaleY
+            leftArrowTranslation = if (isRtl) cs.callAccept.x else -cs.callDecline.x
+            rightArrowTranslation = if (isRtl) -cs.callAccept.x else cs.callDecline.x
+
+            if (isRtl) {
+                cs.callLeftArrow.setImageResource(R.drawable.ic_chevron_right_vector)
+                cs.callRightArrow.setImageResource(R.drawable.ic_chevron_left_vector)
+            }
+
+            cs.callLeftArrow.applyColorFilter(getColor(R.color.md_red_400))
+            cs.callRightArrow.applyColorFilter(getColor(R.color.md_green_400))
+
+            startArrowAnimation(cs.callLeftArrow, initialLeftArrowX, initialLeftArrowScaleX, initialLeftArrowScaleY, leftArrowTranslation)
+            startArrowAnimation(cs.callRightArrow, initialRightArrowX, initialRightArrowScaleX, initialRightArrowScaleY, rightArrowTranslation)
+        }
+
+        cs.callDraggable.drawable.mutate().setTint(getProperTextColor())
+        cs.callDraggableBackground.drawable.mutate().setTint(getProperTextColor())
+
+        var lock = false
+        cs.callDraggable.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    dragDownX = event.x
+                    cs.callDraggableBackground.animate().alpha(0f)
+                    stopAnimation = true
+                    cs.callLeftArrow.animate().alpha(0f)
+                    cs.callRightArrow.animate().alpha(0f)
+                    lock = false
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    dragDownX = 0f
+                    cs.callDraggable.animate().x(initialDraggableX).withEndAction {
+                        cs.callDraggableBackground.animate().alpha(0.2f)
+                    }
+                    cs.callDraggable.setImageDrawable(getDrawable(R.drawable.ic_phone_down_vector))
+                    cs.callDraggable.drawable.mutate().setTint(getProperTextColor())
+                    cs.callLeftArrow.animate().alpha(1f)
+                    cs.callRightArrow.animate().alpha(1f)
+                    stopAnimation = false
+                    startArrowAnimation(cs.callLeftArrow, initialLeftArrowX, initialLeftArrowScaleX, initialLeftArrowScaleY, leftArrowTranslation)
+                    startArrowAnimation(cs.callRightArrow, initialRightArrowX, initialRightArrowScaleX, initialRightArrowScaleY, rightArrowTranslation)
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    cs.callDraggable.x = min(maxDragX, max(minDragX, event.rawX - dragDownX))
+                    when {
+                        cs.callDraggable.x >= maxDragX - 50f -> {
+                            if (!lock) {
+                                lock = true
+                                cs.callDraggable.performHapticFeedback()
+                                if (isRtl) endCall() else answerCall()
+                            }
+                        }
+                        cs.callDraggable.x <= minDragX + 50f -> {
+                            if (!lock) {
+                                lock = true
+                                cs.callDraggable.performHapticFeedback()
+                                if (isRtl) answerCall() else endCall()
+                            }
+                        }
+                        cs.callDraggable.x > initialDraggableX -> {
+                            lock = false
+                            val drawableRes = if (isRtl) R.drawable.ic_phone_down_red_vector else R.drawable.ic_phone_green_vector
+                            cs.callDraggable.setImageDrawable(getDrawable(drawableRes))
+                        }
+                        cs.callDraggable.x <= initialDraggableX -> {
+                            lock = false
+                            val drawableRes = if (isRtl) R.drawable.ic_phone_green_vector else R.drawable.ic_phone_down_red_vector
+                            cs.callDraggable.setImageDrawable(getDrawable(drawableRes))
+                        }
+                    }
+                }
+            }
+            true
+        }
+    }
+
+    private fun startArrowAnimation(arrow: ImageView, initialX: Float, initialScaleX: Float, initialScaleY: Float, translation: Float) {
+        arrow.apply {
+            alpha = 1f
+            x = initialX
+            scaleX = initialScaleX
+            scaleY = initialScaleY
+            animate()
+                .alpha(0f)
+                .translationX(translation)
+                .scaleXBy(-0.5f)
+                .scaleYBy(-0.5f)
+                .setDuration(1000)
+                .withEndAction {
+                    if (!stopAnimation) {
+                        startArrowAnimation(this, initialX, initialScaleX, initialScaleY, translation)
+                    }
+                }
+        }
+    }
+
     private fun startAutoAnswerCountdown() {
         val delaySeconds = config.autoAnswerDelaySeconds
-        if (delaySeconds <= 0) {
-            // Instant mode: answer after a short 3-second countdown (simulated call visual feedback)
-            autoAnswerCountdown = 3
-        } else {
-            autoAnswerCountdown = delaySeconds
-        }
-        updateCountdownText()
+        autoAnswerCountdown = if (delaySeconds <= 0) 3 else delaySeconds
+
+        val cs = binding.callScreen
+        cs.autoAnswerCountdownLabel.text = getString(R.string.auto_answer_countdown, autoAnswerCountdown)
+        cs.autoAnswerCountdownLabel.beVisible()
+        cs.autoAnswerSkipButton.beVisible()
+
         handler.postDelayed(object : Runnable {
             override fun run() {
                 if (state != State.RINGING) return
@@ -95,32 +269,46 @@ class SimulatedCallActivity : AppCompatActivity() {
                 if (autoAnswerCountdown <= 0) {
                     answerCall()
                 } else {
-                    updateCountdownText()
+                    cs.autoAnswerCountdownLabel.text = getString(R.string.auto_answer_countdown, autoAnswerCountdown)
                     handler.postDelayed(this, 1000)
                 }
             }
         }, 1000)
     }
 
-    private fun updateCountdownText() {
-        binding.callStatus.text = getString(R.string.simulated_call_auto_answering, autoAnswerCountdown)
+    private fun cancelAutoAnswerCountdown() {
+        autoAnswerCountdown = 0
+        val cs = binding.callScreen
+        cs.autoAnswerCountdownLabel.beGone()
+        cs.autoAnswerSkipButton.beGone()
+        cs.callStatusLabel.text = getString(R.string.simulated_call_ringing)
     }
 
     private fun answerCall() {
         if (state != State.RINGING) return
         state = State.ACTIVE
 
-        binding.callStatus.text = getString(R.string.simulated_call_active)
-        binding.answerButton.visibility = android.view.View.GONE
-        binding.declineButton.visibility = android.view.View.GONE
-        binding.hangUpButton.visibility = android.view.View.VISIBLE
+        val cs = binding.callScreen
+        cs.incomingCallHolder.beGone()
+        cs.ongoingCallHolder.beVisible()
+        cs.autoAnswerCountdownLabel.beGone()
+        cs.autoAnswerSkipButton.beGone()
 
-        // Start timer
-        binding.callTimer.visibility = android.view.View.VISIBLE
-        binding.callTimer.base = SystemClock.elapsedRealtime()
-        binding.callTimer.start()
+        callDuration = 0
+        val callDurationHandler = Handler(Looper.getMainLooper())
+        val updateDurationTask = object : Runnable {
+            override fun run() {
+                if (state == State.ACTIVE) {
+                    callDuration++
+                    cs.callStatusLabel.text = callDuration.getFormattedDuration()
+                    callDurationHandler.postDelayed(this, 1000)
+                }
+            }
+        }
+        cs.callStatusLabel.text = getString(R.string.simulated_call_active)
+        callDurationHandler.postDelayed(updateDurationTask, 1000)
 
-        // Play greeting — use per-SIM settings if a SIM was selected
+        // Play greeting
         val simSettings = simId?.let { config.getSimSettings(it) }
         val greeting = if (simSettings != null && simSettings.greeting.isNotEmpty()) {
             simSettings.greeting
@@ -139,12 +327,8 @@ class SimulatedCallActivity : AppCompatActivity() {
         }
 
         if (greeting.isNotEmpty()) {
-            // Start recording BEFORE greeting so ambient mic audio is captured
             startRecordingIfEnabled()
 
-            // Synthesize greeting to a WAV file for transcription using a
-            // separate GreetingManager instance so it doesn't conflict with
-            // the playback instance.
             val greetingDir = File(getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
             greetingDir.mkdirs()
             greetingAudioFile = File(greetingDir, "greeting_simulated_${System.currentTimeMillis()}.wav")
@@ -153,26 +337,21 @@ class SimulatedCallActivity : AppCompatActivity() {
                 greeting = greeting,
                 languageTag = languageTag,
                 engine = enginePkg
-            ) { /* synthesis done — file is ready for transcription at call end */ }
+            ) { }
 
-            // Also play the greeting audibly so the user hears it
             handler.postDelayed({
                 greetingManager.playGreetingPreview(
                     greeting = greeting,
                     languageTag = languageTag,
                     engine = enginePkg
-                ) {
-                    // Greeting finished — recording continues to capture silence/response
-                }
+                ) { }
             }, 500)
         } else {
-            // No greeting — start recording immediately
             startRecordingIfEnabled()
         }
 
         // Handle listen-in
-        val listenInMode = config.listenInMode
-        when (listenInMode) {
+        when (config.listenInMode) {
             LISTEN_IN_AUTO -> {
                 handler.postDelayed({
                     enableSpeaker(true)
@@ -186,7 +365,6 @@ class SimulatedCallActivity : AppCompatActivity() {
             }
         }
 
-        // Auto-disconnect after timeout
         handler.postDelayed({ endCall() }, AUTO_DISCONNECT_MS)
     }
 
@@ -198,44 +376,32 @@ class SimulatedCallActivity : AppCompatActivity() {
         greetingManager.stopGreeting()
         dismissListenNotification()
 
-        binding.callTimer.stop()
-        binding.callStatus.text = getString(R.string.simulated_call_ended)
-        binding.answerButton.visibility = android.view.View.GONE
-        binding.declineButton.visibility = android.view.View.GONE
-        binding.hangUpButton.visibility = android.view.View.GONE
+        val cs = binding.callScreen
+        cs.callStatusLabel.text = getString(R.string.simulated_call_ended)
+        cs.incomingCallHolder.beGone()
+        cs.ongoingCallHolder.beGone()
 
-        // Stop recording and show summary
         if (callRecordingManager.isCurrentlyRecording()) {
             recordingResult = callRecordingManager.stopRecording()
         }
 
-        val elapsed = if (binding.callTimer.base > 0) {
-            ((SystemClock.elapsedRealtime() - binding.callTimer.base) / 1000).toInt()
-        } else 0
-
-        if (elapsed > 0) {
+        if (callDuration > 0) {
             CallSummaryManager(this).showCallSummary(
                 contactName = getString(R.string.simulated_call_caller),
                 phoneNumber = getString(R.string.simulated_call_number),
-                durationSeconds = elapsed,
+                durationSeconds = callDuration,
                 recordingResult = recordingResult
             )
         }
 
-        // Trigger transcription if transcription is enabled.
-        // For simulated calls, prefer the synthesized greeting WAV file since
-        // the mic recording (VOICE_COMMUNICATION) cannot capture TTS output.
-        // Fall back to the mic recording if no greeting was synthesized.
         if (config.callTranscriptionEnabled) {
             val transcriptionUri: Uri?
             val transcriptionName: String
 
             if (greetingAudioFile != null && greetingAudioFile!!.exists() && greetingAudioFile!!.length() > 0) {
-                // Use the synthesized greeting audio
                 transcriptionUri = Uri.fromFile(greetingAudioFile!!)
                 transcriptionName = greetingAudioFile!!.name
             } else if (recordingResult != null) {
-                // Fall back to mic recording
                 val transcriptionManager = TranscriptionManager(this)
                 transcriptionUri = transcriptionManager.getRecordingUri(recordingResult!!)
                 transcriptionName = recordingResult!!.name
@@ -249,7 +415,7 @@ class SimulatedCallActivity : AppCompatActivity() {
                     val transcriptionIntent = TranscriptionService.createIntent(
                         this, transcriptionUri, transcriptionName
                     )
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         startForegroundService(transcriptionIntent)
                     } else {
                         startService(transcriptionIntent)
@@ -260,7 +426,6 @@ class SimulatedCallActivity : AppCompatActivity() {
             }
         }
 
-        // Close after a short delay (longer to allow transcription service to start)
         handler.postDelayed({ finish() }, 3000)
     }
 
@@ -273,6 +438,27 @@ class SimulatedCallActivity : AppCompatActivity() {
         if (state != State.ACTIVE) return
         if (config.callRecordingEnabled) {
             callRecordingManager.startRecording("simulated")
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private fun addLockScreenFlags() {
+        if (isOreoMr1Plus()) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            window.addFlags(
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+                    or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                    or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
+                    or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            )
+        }
+
+        if (isOreoPlus()) {
+            (getSystemService(Context.KEYGUARD_SERVICE) as android.app.KeyguardManager).requestDismissKeyguard(this, null)
+        } else {
+            window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD)
         }
     }
 
