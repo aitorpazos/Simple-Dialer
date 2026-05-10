@@ -21,21 +21,24 @@ import java.util.*
  *
  * Audio capture on Android depends on:
  *   1. Whether the app holds CAPTURE_AUDIO_OUTPUT (signature/privileged permission)
- *   2. The device's audio HAL behaviour and ROM (OEM vs AOSP-based)
+ *   2. Whether the accessibility service is enabled (unlocks VOICE_CALL on many devices)
+ *   3. The device's audio HAL behaviour and ROM (OEM vs AOSP-based)
  *
  * When CAPTURE_AUDIO_OUTPUT is granted (privileged system app):
  *   - VOICE_CALL works reliably — captures both sides
  *
- * When installed as a regular app (non-privileged):
- *   - VOICE_CALL starts without error on AOSP/LineageOS/e!OS but captures SILENCE.
- *     The accessibility service trick only unlocks VOICE_CALL on certain OEM ROMs
- *     (Samsung, Xiaomi, OnePlus) — not on AOSP-based ROMs.
- *   - Default "auto" mode skips VOICE_CALL and uses VOICE_COMMUNICATION → MIC.
- *   - VOICE_COMMUNICATION captures the mic stream during a call.
- *   - MIC always works and captures the local microphone (both sides audible
- *     when speakerphone is on).
- *   - User can override the audio source in Settings if their device supports
- *     VOICE_CALL without CAPTURE_AUDIO_OUTPUT.
+ * When installed as a regular app with accessibility service enabled:
+ *   - VOICE_CALL is attempted first. The accessibility service signals elevated
+ *     privileges to the audio framework and unlocks VOICE_CALL on many devices,
+ *     including some AOSP-based ROMs (/e/OS, LineageOS on certain hardware).
+ *   - Falls back to VOICE_COMMUNICATION → MIC if VOICE_CALL throws.
+ *   - If VOICE_CALL starts without error but captures silence on a particular
+ *     device, the user should switch audio source manually in Settings.
+ *
+ * When installed as a regular app without accessibility service:
+ *   - VOICE_CALL is skipped (always produces silence without privileges).
+ *   - VOICE_COMMUNICATION → VOICE_RECOGNITION → MIC are tried in order.
+ *   - MIC captures the local microphone (both sides audible on speakerphone).
  *
  * IMPORTANT: We do NOT override AudioManager.mode. On Android 10+ the telecom
  * framework owns audio mode during calls. Overriding it can cause the audio HAL
@@ -93,15 +96,16 @@ class CallRecordingManager(private val context: Context) {
      * (but we still include fallbacks for robustness).
      *
      * Without CAPTURE_AUDIO_OUTPUT (regular app install):
-     *   VOICE_CALL starts without error on AOSP/LineageOS/e!OS but captures
-     *   **silence** — the audio framework doesn't actually route call audio to
-     *   a non-privileged recorder. The accessibility service trick only works on
-     *   certain OEM ROMs (Samsung, Xiaomi, OnePlus).
-     *
-     *   On AOSP-based ROMs the best we can do is:
-     *   - VOICE_COMMUNICATION: captures mic + may capture some call audio on
-     *     devices where the audio HAL mixes it into the communication stream.
-     *   - MIC: always works, captures local microphone (both sides audible
+     *   - If the accessibility service is enabled, VOICE_CALL is attempted first.
+     *     The accessibility service signals elevated privileges to the audio
+     *     framework and unlocks VOICE_CALL on many devices — including some
+     *     AOSP-based ROMs (/e/OS, LineageOS on certain hardware).
+     *   - If VOICE_CALL produces silence (starts without error but captures no
+     *     audio), the user should switch to a different source in Settings.
+     *   - Without accessibility, VOICE_CALL is skipped entirely since it will
+     *     always produce silence on non-privileged installs.
+     *   - VOICE_COMMUNICATION captures the mic stream during a call.
+     *   - MIC always works and captures the local microphone (both sides audible
      *     when speakerphone is on).
      *
      * The user can also override the audio source manually in settings.
@@ -133,10 +137,21 @@ class CallRecordingManager(private val context: Context) {
                     MediaRecorder.AudioSource.MIC to "MIC",
                 )
             }
+            accessibilityEnabled -> {
+                // Accessibility service is running — try VOICE_CALL first.
+                // On many devices (including some AOSP-based ROMs like /e/OS on
+                // Fairphone), the accessibility service unlocks VOICE_CALL for
+                // third-party apps. If it produces silence on a particular device,
+                // the user can override to VOICE_COMMUNICATION or MIC in Settings.
+                listOf(
+                    MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
+                    MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
+                    MediaRecorder.AudioSource.MIC to "MIC",
+                )
+            }
             else -> {
-                // Non-privileged install (regular APK on /e/OS, LineageOS, stock AOSP).
-                // VOICE_CALL silently produces empty audio on these ROMs even with
-                // accessibility service enabled — skip it entirely.
+                // No special permissions and no accessibility service.
+                // VOICE_CALL will silently produce empty audio — skip it.
                 // VOICE_COMMUNICATION captures the mic stream during a call and on
                 // some HALs includes the remote party; MIC is the safe fallback.
                 listOf(
@@ -199,6 +214,25 @@ class CallRecordingManager(private val context: Context) {
                     "captureAudioOutput=${hasCaptureAudioOutput()}, " +
                     "accessibility=${CallRecordingAccessibilityService.isServiceEnabled(context)}, " +
                     "sampleRate=$SAMPLE_RATE")
+
+                // Schedule amplitude check after 3 seconds to detect silent recordings
+                val recorder = mediaRecorder
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    try {
+                        if (isRecording && recorder != null) {
+                            val amplitude = recorder.maxAmplitude
+                            Log.i(TAG, "Amplitude check at 3s: maxAmplitude=$amplitude, source=$sourceName")
+                            if (amplitude == 0) {
+                                Log.w(TAG, "⚠️ Recording appears SILENT (amplitude=0). " +
+                                    "Audio source $sourceName may not be capturing call audio on this device. " +
+                                    "Try changing the audio source in Settings.")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Amplitude check failed: ${e.message}")
+                    }
+                }, 3000)
+
                 return true
             } catch (e: Exception) {
                 Log.w(TAG, "Audio source $sourceName failed: ${e.message}")
