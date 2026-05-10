@@ -52,7 +52,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:alpha="0.4"
-            android:rotation="90"
+            android:rotation="0"
             android:src="@drawable/ic_chevron_right_vector" />
 
     </LinearLayout>

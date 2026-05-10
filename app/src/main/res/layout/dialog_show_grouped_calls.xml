@@ -6,6 +6,26 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
+    <TextView
+        android:id="@+id/grouped_calls_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/normal_margin"
+        android:paddingEnd="@dimen/normal_margin"
+        android:paddingTop="@dimen/normal_margin"
+        android:paddingBottom="@dimen/small_margin"
+        android:textSize="@dimen/bigger_text_size"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="@dimen/normal_margin"
+        android:layout_marginEnd="@dimen/normal_margin"
+        android:background="?android:attr/listDivider" />
+
     <com.simplemobiletools.commons.views.MyRecyclerView
         android:id="@+id/select_grouped_calls_list"
         android:layout_width="match_parent"

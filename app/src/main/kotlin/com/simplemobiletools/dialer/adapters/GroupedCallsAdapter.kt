@@ -84,8 +84,8 @@ class GroupedCallsAdapter(
         binding.groupedCallIndicator.visibility = if (hasRecording) View.VISIBLE else View.INVISIBLE
         binding.groupedCallIndicator.setColorFilter(textColor)
 
-        // Rotate indicator for expanded state
-        binding.groupedCallIndicator.rotation = if (isExpanded) 180f else 90f
+        // Rotate indicator: right (0°) when collapsed, down (90°) when expanded
+        binding.groupedCallIndicator.rotation = if (isExpanded) 90f else 0f
 
         // Actions panel
         binding.groupedCallActions.visibility = if (isExpanded && hasRecording) View.VISIBLE else View.GONE

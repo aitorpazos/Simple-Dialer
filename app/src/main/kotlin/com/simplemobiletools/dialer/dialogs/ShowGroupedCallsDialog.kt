@@ -10,12 +10,19 @@ import com.simplemobiletools.dialer.databinding.DialogShowGroupedCallsBinding
 import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.models.RecentCall
 
-class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayList<Int>) {
+class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayList<Int>, displayName: String = "") {
     private var dialog: AlertDialog? = null
     private val binding by activity.viewBinding(DialogShowGroupedCallsBinding::inflate)
     private val transcriptionManager = TranscriptionManager(activity)
 
     init {
+        // Show contact name/number as dialog header
+        if (displayName.isNotEmpty()) {
+            binding.groupedCallsHeader.text = displayName
+        } else {
+            binding.groupedCallsHeader.visibility = android.view.View.GONE
+        }
+
         RecentsHelper(activity).getRecentCalls(false) { allRecents ->
             val recents = allRecents.filter { callIds.contains(it.id) }.toMutableList() as ArrayList<RecentCall>
             activity.runOnUiThread {

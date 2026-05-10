@@ -106,21 +106,6 @@ class TranscriptionService : Service() {
             return START_NOT_STICKY
         }
 
-        // URI can come from the intent (CallService flow) or be looked up by name
-        // (dialog flow where SAF URIs can't be granted via intent extras)
-        val recordingUri = if (uriStr != null) {
-            Uri.parse(uriStr)
-        } else {
-            val lookedUp = transcriptionManager.getRecordingUriByName(recordingName)
-            if (lookedUp == null) {
-                Log.e(TAG, "Could not find recording URI for: $recordingName")
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
-                return START_NOT_STICKY
-            }
-            lookedUp
-        }
-
         if (isRunning) {
             Log.w(TAG, "Transcription already in progress, ignoring")
             return START_NOT_STICKY
@@ -128,8 +113,25 @@ class TranscriptionService : Service() {
 
         isRunning = true
 
+        // All heavy work (including SAF URI lookup) runs on a background thread
+        // to avoid ANR — DocumentFile.fromTreeUri().listFiles() can be very slow.
         Thread {
             try {
+                // URI can come from the intent (CallService flow) or be looked up by name
+                // (dialog flow where SAF URIs can't be granted via intent extras).
+                // The lookup involves SAF listFiles() which MUST NOT run on the main thread.
+                val recordingUri = if (uriStr != null) {
+                    Uri.parse(uriStr)
+                } else {
+                    val lookedUp = transcriptionManager.getRecordingUriByName(recordingName)
+                    if (lookedUp == null) {
+                        Log.e(TAG, "Could not find recording URI for: $recordingName")
+                        return@Thread
+                    }
+                    lookedUp
+                }
+
+                Log.d(TAG, "Transcribing: name=$recordingName, uri=$recordingUri")
                 transcribe(recordingUri, recordingName)
 
                 // Update the call summary notification with transcription buttons
@@ -157,46 +159,51 @@ class TranscriptionService : Service() {
     }
 
     private fun transcribe(recordingUri: Uri, recordingName: String) {
-        val languageTag = transcriptionManager.getTranscriptionLanguage()
-        val modelName = modelManager.resolveModelName(languageTag)
+        try {
+            val languageTag = transcriptionManager.getTranscriptionLanguage()
+            val modelName = modelManager.resolveModelName(languageTag)
 
-        // Download model if not present
-        if (!modelManager.isModelReady(modelName)) {
-            Log.d(TAG, "Model not found, downloading: $modelName")
-            updateNotification(getString(R.string.transcription_downloading_model))
+            // Download model if not present
+            if (!modelManager.isModelReady(modelName)) {
+                Log.d(TAG, "Model not found, downloading: $modelName")
+                updateNotification(getString(R.string.transcription_downloading_model))
 
-            val success = modelManager.downloadModel(modelName) { progress ->
-                val pct = (progress * 100).toInt()
-                updateNotification(getString(R.string.transcription_downloading_model_progress, pct))
+                val success = modelManager.downloadModel(modelName) { progress ->
+                    val pct = (progress * 100).toInt()
+                    updateNotification(getString(R.string.transcription_downloading_model_progress, pct))
+                }
+
+                if (!success) {
+                    Log.e(TAG, "Failed to download model: $modelName")
+                    return
+                }
             }
 
-            if (!success) {
-                Log.e(TAG, "Failed to download model: $modelName")
+            // Decode audio to 16kHz mono PCM
+            updateNotification(getString(R.string.transcription_decoding_audio))
+            val pcmData = decodeAudioToPcm16k(recordingUri)
+            if (pcmData == null || pcmData.isEmpty()) {
+                Log.e(TAG, "Failed to decode audio from: $recordingUri")
                 return
             }
-        }
 
-        // Decode audio to 16kHz mono PCM
-        updateNotification(getString(R.string.transcription_decoding_audio))
-        val pcmData = decodeAudioToPcm16k(recordingUri)
-        if (pcmData == null || pcmData.isEmpty()) {
-            Log.e(TAG, "Failed to decode audio")
-            return
-        }
+            Log.d(TAG, "Decoded ${pcmData.size} bytes of PCM data")
 
-        Log.d(TAG, "Decoded ${pcmData.size} bytes of PCM data")
+            // Run Vosk recognizer
+            updateNotification(getString(R.string.transcription_in_progress))
+            val modelPath = modelManager.getModelDir(modelName).absolutePath
+            val transcriptionText = runVoskRecognizer(modelPath, pcmData)
 
-        // Run Vosk recognizer
-        updateNotification(getString(R.string.transcription_in_progress))
-        val modelPath = modelManager.getModelDir(modelName).absolutePath
-        val transcriptionText = runVoskRecognizer(modelPath, pcmData)
-
-        if (transcriptionText.isNullOrBlank()) {
-            Log.w(TAG, "Transcription produced empty result")
-            transcriptionManager.saveTranscription(recordingName, getString(R.string.transcription_empty))
-        } else {
-            Log.d(TAG, "Transcription complete: ${transcriptionText.length} chars")
-            transcriptionManager.saveTranscription(recordingName, transcriptionText)
+            if (transcriptionText.isNullOrBlank()) {
+                Log.w(TAG, "Transcription produced empty result")
+                transcriptionManager.saveTranscription(recordingName, getString(R.string.transcription_empty))
+            } else {
+                Log.d(TAG, "Transcription complete: ${transcriptionText.length} chars")
+                transcriptionManager.saveTranscription(recordingName, transcriptionText)
+            }
+        } catch (e: Throwable) {
+            // Catch Throwable to handle any native crashes during transcription
+            Log.e(TAG, "Transcription failed for: $recordingName", e)
         }
     }
 
@@ -472,9 +479,20 @@ class TranscriptionService : Service() {
 
     /**
      * Run Vosk recognizer on PCM data and return the full transcription text.
+     *
+     * Vosk uses native code (JNI) — if the model directory is malformed or
+     * the native library has issues, it can throw UnsatisfiedLinkError or
+     * other Throwable subclasses (not just Exception). We catch Throwable
+     * to prevent the entire app from crashing.
      */
     private fun runVoskRecognizer(modelPath: String, pcmData: ByteArray): String? {
         return try {
+            Log.d(TAG, "Loading Vosk model from: $modelPath")
+            val modelDir = java.io.File(modelPath)
+            if (!modelDir.exists() || !modelDir.isDirectory) {
+                Log.e(TAG, "Model directory does not exist or is not a directory: $modelPath")
+                return null
+            }
             val model = Model(modelPath)
             val recognizer = Recognizer(model, TARGET_SAMPLE_RATE.toFloat())
 
@@ -506,7 +524,9 @@ class TranscriptionService : Service() {
             // Parse JSON result — Vosk returns {"text": "..."}
             parseVoskText(finalResult)
 
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            // Catch Throwable (not just Exception) to handle native crashes
+            // like UnsatisfiedLinkError from Vosk JNI
             Log.e(TAG, "Vosk recognition failed", e)
             null
         }

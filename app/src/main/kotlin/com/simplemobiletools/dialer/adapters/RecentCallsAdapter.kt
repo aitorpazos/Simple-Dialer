@@ -216,7 +216,8 @@ class RecentCallsAdapter(
         val recentCall = getSelectedItems().firstOrNull() ?: return
         val callIds = recentCall.neighbourIDs.map { it }.toMutableList() as ArrayList<Int>
         callIds.add(recentCall.id)
-        ShowGroupedCallsDialog(activity, callIds)
+        val displayName = recentCall.name.ifEmpty { recentCall.phoneNumber }
+        ShowGroupedCallsDialog(activity, callIds, displayName)
     }
 
     private fun copyNumber() {
