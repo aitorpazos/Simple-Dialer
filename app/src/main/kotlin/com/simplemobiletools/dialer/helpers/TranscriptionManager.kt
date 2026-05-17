@@ -32,11 +32,11 @@ class TranscriptionManager(private val context: Context) {
 
     /**
      * Find the recording filename for a call by matching phone number and approximate timestamp.
-     * Recording filenames follow: call_{sanitizedNumber}_{yyyyMMdd_HHmmss}.m4a
+     * Recording filenames follow: call_{sanitizedNumber}_{yyyyMMdd_HHmmss}.wav (or .m4a for legacy)
      *
      * @param phoneNumber the phone number from the call
      * @param startTimestampSec call start timestamp in seconds (from RecentCall.startTS)
-     * @return the recording filename (e.g. "call_+123_20260317_080000.m4a") or null
+     * @return the recording filename (e.g. "call_+123_20260317_080000.wav") or null
      */
     fun findRecordingForCall(phoneNumber: String, startTimestampSec: Int): String? {
         val sanitizedNumber = phoneNumber.replace(Regex("[^0-9+]"), "")
@@ -62,7 +62,7 @@ class TranscriptionManager(private val context: Context) {
                 val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
                 if (treeDoc != null) {
                     val allFiles = treeDoc.listFiles()
-                    val prefixMatches = allFiles.filter { it.name?.startsWith(prefix) == true && it.name?.endsWith(".m4a") == true }
+                    val prefixMatches = allFiles.filter { it.name?.startsWith(prefix) == true && isRecordingFile(it.name!!) }
                     Log.d(TAG, "SAF dir has ${allFiles.size} files, ${prefixMatches.size} match prefix '$prefix'")
                     prefixMatches.forEach { Log.d(TAG, "  SAF candidate: ${it.name}") }
                     val matchDoc = prefixMatches
@@ -90,7 +90,7 @@ class TranscriptionManager(private val context: Context) {
     private fun findMatchingFile(dir: File, prefix: String, startTimestampSec: Int): File? {
         if (!dir.exists()) return null
         return dir.listFiles()
-            ?.filter { it.name.startsWith(prefix) && it.name.endsWith(".m4a") }
+            ?.filter { it.name.startsWith(prefix) && isRecordingFile(it.name) }
             ?.mapNotNull { file ->
                 val ts = extractTimestampFromFilename(file.name) ?: return@mapNotNull null
                 Pair(file, ts)
@@ -101,10 +101,18 @@ class TranscriptionManager(private val context: Context) {
     }
 
     /**
-     * Extract unix timestamp (seconds) from a recording filename like call_+123_20260317_080000.m4a
+     * Check if a filename is a recording file (supports .wav and legacy .m4a)
+     */
+    private fun isRecordingFile(name: String): Boolean {
+        return name.endsWith(".wav") || name.endsWith(".m4a")
+    }
+
+    /**
+     * Extract unix timestamp (seconds) from a recording filename like call_+123_20260317_080000.wav
+     * Also supports legacy .m4a extension.
      */
     private fun extractTimestampFromFilename(filename: String): Long? {
-        val regex = Regex("""call_.+_(\d{8}_\d{6})\.m4a""")
+        val regex = Regex("""call_.+_(\d{8}_\d{6})\.(wav|m4a)""")
         val match = regex.find(filename) ?: return null
         return try {
             val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
@@ -176,7 +184,7 @@ class TranscriptionManager(private val context: Context) {
 
     /**
      * Get the transcription file path for a given recording name.
-     * E.g., "call_+123_20260317_080000.m4a" → "call_+123_20260317_080000.txt"
+     * E.g., "call_+123_20260317_080000.wav" → "call_+123_20260317_080000.txt"
      */
     fun getTranscriptionFile(recordingName: String): File {
         val baseName = recordingName.substringBeforeLast(".")
