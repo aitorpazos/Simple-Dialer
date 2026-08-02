@@ -157,10 +157,14 @@ class CallManager {
         }
 
         fun accept() {
+            // A manual answer must always win over a pending auto-answer
+            (inCallService as? com.simplemobiletools.dialer.services.CallService)?.cancelAutoAnswer()
             call?.answer(VideoProfile.STATE_AUDIO_ONLY)
         }
 
         fun reject() {
+            // A manual decline must always cancel a pending auto-answer
+            (inCallService as? com.simplemobiletools.dialer.services.CallService)?.cancelAutoAnswer()
             if (call != null) {
                 val state = getState()
                 if (state == Call.STATE_RINGING) {

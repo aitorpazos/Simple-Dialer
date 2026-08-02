@@ -167,42 +167,34 @@ class CallService : InCallService() {
         if (autoAnswerMode == AUTO_ANSWER_NONE) return
 
         val shouldAnswer = { doAnswer: () -> Unit ->
-            val delaySeconds = config.autoAnswerDelaySeconds
-            if (delaySeconds <= 0) {
-                // Instant mode: answer after a short delay to let the UI show
-                val runnable = Runnable {
-                    if (call.getStateCompat() == Call.STATE_RINGING) {
+            // Always run a visible countdown (minimum 1s) so the user can see
+            // when the auto-answer will happen and inhibit it. If the user
+            // answers or declines manually first, the countdown is cancelled.
+            val delaySeconds = maxOf(config.autoAnswerDelaySeconds, 1)
+            autoAnswerCountdown = delaySeconds
+            CallManager.autoAnswerCountdown = autoAnswerCountdown
+            val countdownRunnable = object : Runnable {
+                override fun run() {
+                    // User already answered/declined or the call state changed:
+                    // never auto-answer over a manual action.
+                    if (call.getStateCompat() != Call.STATE_RINGING) {
+                        cancelAutoAnswer()
+                        return
+                    }
+                    autoAnswerCountdown--
+                    CallManager.autoAnswerCountdown = autoAnswerCountdown
+                    if (autoAnswerCountdown <= 0) {
                         wasAutoAnswered = true
+                        autoAnswerRunnable = null
+                        CallManager.autoAnswerCountdown = -1
                         call.answer(VideoProfile.STATE_AUDIO_ONLY)
+                    } else {
+                        handler.postDelayed(this, 1000)
                     }
                 }
-                autoAnswerRunnable = runnable
-                handler.postDelayed(runnable, 1000)
-            } else {
-                // Countdown mode: give user time to skip
-                autoAnswerCountdown = delaySeconds
-                CallManager.autoAnswerCountdown = autoAnswerCountdown
-                val countdownRunnable = object : Runnable {
-                    override fun run() {
-                        if (call.getStateCompat() != Call.STATE_RINGING) {
-                            cancelAutoAnswer()
-                            return
-                        }
-                        autoAnswerCountdown--
-                        CallManager.autoAnswerCountdown = autoAnswerCountdown
-                        if (autoAnswerCountdown <= 0) {
-                            wasAutoAnswered = true
-                            autoAnswerRunnable = null
-                            CallManager.autoAnswerCountdown = -1
-                            call.answer(VideoProfile.STATE_AUDIO_ONLY)
-                        } else {
-                            handler.postDelayed(this, 1000)
-                        }
-                    }
-                }
-                autoAnswerRunnable = countdownRunnable
-                handler.postDelayed(countdownRunnable, 1000)
             }
+            autoAnswerRunnable = countdownRunnable
+            handler.postDelayed(countdownRunnable, 1000)
         }
 
         when (autoAnswerMode) {
