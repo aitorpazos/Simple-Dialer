@@ -152,7 +152,7 @@
     <string name="auto_answer_delay_value">%d seconds</string>
     <string name="auto_answer_delay_instant">Instant</string>
     <string name="auto_answer_countdown">Auto-answering in %ds…</string>
-    <string name="auto_answer_skip">Skip</string>
+    <string name="auto_answer_skip">Cancel auto-answer</string>
     <string name="preview_greeting">🔊 Listen to greeting preview</string>
     <string name="preview_greeting_playing">Playing greeting…</string>
     <string name="greeting_empty">Greeting text is empty</string>
