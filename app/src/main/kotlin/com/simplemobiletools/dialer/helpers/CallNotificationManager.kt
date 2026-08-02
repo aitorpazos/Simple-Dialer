@@ -99,9 +99,16 @@ class CallNotificationManager(private val context: Context) {
             }
 
             val notification = builder.build()
-            // it's rare but possible for the call state to change by now
-            if (CallManager.getState() == callState) {
+            val currentState = CallManager.getState()
+            if (currentState == callState) {
                 notificationManager.notify(CALL_NOTIFICATION_ID, notification)
+            } else if (currentState != Call.STATE_DISCONNECTED && currentState != Call.STATE_DISCONNECTING) {
+                // The call state changed while we were resolving the contact
+                // (e.g. RINGING -> ACTIVE). Previously the notification was
+                // silently dropped here, leaving the user with no way to
+                // return to an ongoing call after switching apps. Rebuild it
+                // for the new state instead.
+                setupNotification(forceLowPriority)
             }
         }
     }

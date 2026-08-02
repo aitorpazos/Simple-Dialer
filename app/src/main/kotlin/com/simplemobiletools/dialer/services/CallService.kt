@@ -48,7 +48,12 @@ class CallService : InCallService() {
         override fun onStateChanged(call: Call, state: Int) {
             super.onStateChanged(call, state)
             when (state) {
-                Call.STATE_ACTIVE -> onCallActive(call)
+                Call.STATE_ACTIVE -> {
+                    onCallActive(call)
+                    // Always refresh the ongoing-call notification so the user can
+                    // return to the call after switching apps.
+                    callNotificationManager.setupNotification()
+                }
                 Call.STATE_DISCONNECTED, Call.STATE_DISCONNECTING -> {
                     onCallEnding(call)
                     callNotificationManager.cancelNotification()
