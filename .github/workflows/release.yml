@@ -67,11 +67,10 @@ jobs:
             - 🧪 **Simulate Call** — Test the full caller experience from Settings
 
             ### Changes in this release
-            - 🖐️ **Manual answer mode** — Never answer automatically unless you explicitly press the answer button
-            - 🎙️ **Reliable recording policy** — Auto mode now uses legal microphone sources first on regular Android installations
-            - 🔍 **Clear recording diagnostics** — Failed, silent, blocked, or unsaved recordings now report the actual reason
-            - 🧹 **Simpler setup** — Accessibility is no longer presented as a call-recording requirement
-            - ⚡ **Faster call details** — Recording scans no longer block the main thread
+            - 🗣️ **Correct Piper language** — Greeting playback now selects a voice matching the language chosen in Settings
+            - 🎯 **Verified voice matching** — Exact locale is preferred, with a safe same-language fallback
+            - 🛡️ **No stale voice override** — A system-default voice from another language can no longer override the requested Piper language
+            - 🧪 **Consistent test audio** — Live greetings, previews, and synthesized test audio use the same language-selection policy
 
             ### Install
             Download the **release APK** (signed, minified).

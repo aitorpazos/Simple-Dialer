@@ -1,6 +1,13 @@
 Changelog
 ==========
 
+Version 5.41.1 *(2026-08-09)*
+----------------------------
+
+ * Fixed Piper TTS voice selection so the greeting uses the language selected in Settings
+ * Prevented a stale system-default voice from overriding the requested language
+ * Applied the same verified language and voice selection to live greetings, previews, and synthesized test audio
+
 Version 5.41.0 *(2026-08-09)*
 ----------------------------
 
