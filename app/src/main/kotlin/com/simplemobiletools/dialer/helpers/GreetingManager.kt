@@ -205,74 +205,17 @@ class GreetingManager(private val context: Context) {
         }
 
         // --- Step 2: Also try to set an explicit Voice ---
-        // This provides an additional signal (request.voiceName) for engines
-        // that prefer voice-based selection over language-based selection.
-        // Critically, this also overrides any stale voice name cached by the
-        // framework during initialization.
-        var voiceSet = false
-        try {
-            val allVoices = instance.voices
-            if (allVoices != null && allVoices.isNotEmpty()) {
-                // Exact locale match (language + country, e.g. en-GB)
-                var match = allVoices.firstOrNull { v ->
-                    !v.isNetworkConnectionRequired &&
-                    v.locale.language == desiredLocale.language &&
-                    v.locale.country.equals(desiredLocale.country, ignoreCase = true) &&
-                    desiredLocale.country.isNotEmpty()
-                }
+        // Keep the voice selected for THIS request separate from instance.voice.
+        // Android can leave instance.voice pointing at the system default when
+        // setLanguage()/setVoice() encounters its client-side verification race.
+        val selectedVoiceName = selectVoiceForLocale(instance, desiredLocale, myGeneration)
 
-                // Fallback: language-only match (e.g. "en" matches any en-* voice)
-                if (match == null) {
-                    match = allVoices.firstOrNull { v ->
-                        !v.isNetworkConnectionRequired &&
-                        v.locale.language == desiredLocale.language
-                    }
-                }
-
-                // Last resort: allow network voices too
-                if (match == null) {
-                    match = allVoices.firstOrNull { v ->
-                        v.locale.language == desiredLocale.language &&
-                        v.locale.country.equals(desiredLocale.country, ignoreCase = true) &&
-                        desiredLocale.country.isNotEmpty()
-                    } ?: allVoices.firstOrNull { v ->
-                        v.locale.language == desiredLocale.language
-                    }
-                }
-
-                if (match != null) {
-                    val setResult = instance.setVoice(match)
-                    voiceSet = setResult == TextToSpeech.SUCCESS
-                    Log.d(TAG, "gen=$myGeneration setVoice(${match.name}, locale=${match.locale}) " +
-                        "result=$setResult voiceSet=$voiceSet")
-
-                    // DO NOT call setLanguage() again after setVoice() succeeds!
-                    // The Android TTS framework's setLanguage() implementation:
-                    //   1. Calls getDefaultVoiceNameFor() to get a voice name
-                    //   2. Calls loadVoice() with that name
-                    //   3. Calls getVoice() to verify
-                    //   4. If getVoice() returns null → returns LANG_NOT_SUPPORTED
-                    //      and RESETS mCurrentVoiceName to the previous (system default)
-                    // This means calling setLanguage() after setVoice() can UNDO
-                    // the successful voice selection, causing the engine to receive
-                    // the system default voice name instead of the one we just set.
-                    // The voice name set by setVoice() already encodes the correct
-                    // language (e.g. "es_ES-davefx-medium" → Spanish/Spain).
-                } else {
-                    Log.w(TAG, "gen=$myGeneration no voice found for locale=$desiredLocale " +
-                        "among ${allVoices.size} voices, relying on setLanguage only")
-                }
-            } else {
-                Log.w(TAG, "gen=$myGeneration getVoices returned null/empty, relying on setLanguage only")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "gen=$myGeneration getVoices/setVoice failed: ${e.message}")
-        }
-
-        // Log final state
-        val finalVoice = try { instance.voice } catch (_: Exception) { null }
-        Log.d(TAG, "gen=$myGeneration final voice=${finalVoice?.name} locale=${finalVoice?.locale} " +
-            "voiceSet=$voiceSet engine=${instance.defaultEngine}")
+        // Log framework state for diagnostics, but never use it as Piper's
+        // direct voice override because it may be stale and in another language.
+        val frameworkVoice = try { instance.voice } catch (_: Exception) { null }
+        Log.d(TAG, "gen=$myGeneration framework voice=${frameworkVoice?.name} " +
+            "locale=${frameworkVoice?.locale} selectedVoice=$selectedVoiceName " +
+            "engine=${instance.defaultEngine}")
 
         // Set up utterance listener
         instance.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -300,11 +243,68 @@ class GreetingManager(private val context: Context) {
         if (desiredLocale.country.isNotEmpty()) {
             params.putString("piper_country", desiredLocale.country)
         }
-        val finalVoiceName = try { instance.voice?.name } catch (_: Exception) { null }
-        if (finalVoiceName != null) {
-            params.putString("piper_voice_name", finalVoiceName)
+        // Only send the voice explicitly selected for this request. Falling
+        // back to instance.voice here used to send Piper a stale system-default
+        // voice, which has higher priority than piper_language in that engine.
+        if (selectedVoiceName != null) {
+            params.putString("piper_voice_name", selectedVoiceName)
         }
         instance.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
+    }
+
+    /**
+     * Select and apply a voice that matches [desiredLocale]. The returned name
+     * is safe to send as Piper's direct voice override because it belongs to
+     * this request and [TextToSpeech.setVoice] accepted it.
+     */
+    private fun selectVoiceForLocale(
+        instance: TextToSpeech,
+        desiredLocale: Locale,
+        myGeneration: Int,
+    ): String? {
+        return try {
+            val androidVoices = instance.voices.orEmpty()
+            if (androidVoices.isEmpty()) {
+                Log.w(TAG, "gen=$myGeneration getVoices returned null/empty, relying on language only")
+                return null
+            }
+
+            val candidates = androidVoices.map { voice ->
+                TtsLanguagePolicy.VoiceCandidate(
+                    name = voice.name,
+                    language = voice.locale.language,
+                    country = voice.locale.country,
+                    requiresNetwork = voice.isNetworkConnectionRequired,
+                )
+            }
+            val selected = TtsLanguagePolicy.selectVoice(
+                desiredLanguage = desiredLocale.language,
+                desiredCountry = desiredLocale.country,
+                voices = candidates,
+            )
+            if (selected == null) {
+                Log.w(TAG, "gen=$myGeneration no voice found for locale=$desiredLocale " +
+                    "among ${androidVoices.size} voices, relying on language only")
+                return null
+            }
+
+            val androidVoice = androidVoices.firstOrNull { it.name == selected.name } ?: return null
+            val result = instance.setVoice(androidVoice)
+            val override = TtsLanguagePolicy.piperVoiceOverride(
+                desiredLanguage = desiredLocale.language,
+                selectedVoice = selected,
+                setVoiceSucceeded = result == TextToSpeech.SUCCESS,
+            )
+            Log.d(TAG, "gen=$myGeneration setVoice(${androidVoice.name}, locale=${androidVoice.locale}) " +
+                "result=$result directOverride=$override")
+
+            // Do not call setLanguage() again. Android can reset the successful
+            // voice selection back to the system default during verification.
+            override
+        } catch (e: Exception) {
+            Log.w(TAG, "gen=$myGeneration getVoices/setVoice failed: ${e.message}")
+            null
+        }
     }
 
     // ---------------------------------------------------------------
@@ -394,35 +394,11 @@ class GreetingManager(private val context: Context) {
                 if (generation.get() != myGeneration) return@postDelayed
                 val inst = tts ?: return@postDelayed
 
-                // Apply language (same logic as applyLanguageAndSpeak)
-                inst.setLanguage(desiredLocale)
-                try {
-                    val allVoices = inst.voices
-                    if (allVoices != null && allVoices.isNotEmpty()) {
-                        var match = allVoices.firstOrNull { v ->
-                            !v.isNetworkConnectionRequired &&
-                            v.locale.language == desiredLocale.language &&
-                            v.locale.country.equals(desiredLocale.country, ignoreCase = true) &&
-                            desiredLocale.country.isNotEmpty()
-                        }
-                        if (match == null) {
-                            match = allVoices.firstOrNull { v ->
-                                !v.isNetworkConnectionRequired &&
-                                v.locale.language == desiredLocale.language
-                            }
-                        }
-                        if (match == null) {
-                            match = allVoices.firstOrNull { v ->
-                                v.locale.language == desiredLocale.language
-                            }
-                        }
-                        if (match != null) {
-                            inst.setVoice(match)
-                            // DO NOT call setLanguage() after setVoice() — it can
-                            // undo the voice selection (see applyLanguageAndSpeak comment)
-                        }
-                    }
-                } catch (_: Exception) {}
+                // Apply the same language and verified voice selection used by
+                // live greeting playback.
+                val langResult = inst.setLanguage(desiredLocale)
+                Log.d(TAG, "synthesizeToFile setLanguage($desiredLocale) result=$langResult")
+                val selectedVoiceName = selectVoiceForLocale(inst, desiredLocale, myGeneration)
 
                 inst.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {}
@@ -443,9 +419,8 @@ class GreetingManager(private val context: Context) {
                 if (desiredLocale.country.isNotEmpty()) {
                     params.putString("piper_country", desiredLocale.country)
                 }
-                val synthVoiceName = try { inst.voice?.name } catch (_: Exception) { null }
-                if (synthVoiceName != null) {
-                    params.putString("piper_voice_name", synthVoiceName)
+                if (selectedVoiceName != null) {
+                    params.putString("piper_voice_name", selectedVoiceName)
                 }
                 inst.synthesizeToFile(text, params, outputFile, "synth_to_file_$myGeneration")
             }, 300)
