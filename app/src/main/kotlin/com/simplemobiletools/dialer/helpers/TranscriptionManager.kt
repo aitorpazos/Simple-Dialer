@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import com.simplemobiletools.dialer.extensions.config
+import com.simplemobiletools.dialer.models.RecentCall
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -39,66 +40,79 @@ class TranscriptionManager(private val context: Context) {
      * @return the recording filename (e.g. "call_+123_20260317_080000.wav") or null
      */
     fun findRecordingForCall(phoneNumber: String, startTimestampSec: Int): String? {
-        val sanitizedNumber = phoneNumber.replace(Regex("[^0-9+]"), "")
-        val prefix = "call_${sanitizedNumber}_"
+        val lookup = RecordingLookup(0, phoneNumber, startTimestampSec)
+        return findRecordings(listOf(lookup))[lookup.id]
+    }
 
-        Log.d(TAG, "findRecordingForCall: phoneNumber=$phoneNumber, sanitized=$sanitizedNumber, prefix=$prefix, startTS=$startTimestampSec")
+    /**
+     * Resolve recordings for a group of calls with a single directory scan.
+     * This can involve slow SAF provider I/O and must be called off the main thread.
+     */
+    fun findRecordingsForCalls(calls: List<RecentCall>): Map<Int, String> {
+        val lookups = calls.map { RecordingLookup(it.id, it.phoneNumber, it.startTS) }
+        return findRecordings(lookups)
+    }
 
-        // Check default directory
-        val dir = getDefaultTranscriptionsDir()
-        Log.d(TAG, "Checking default dir: ${dir.absolutePath}, exists=${dir.exists()}, files=${dir.listFiles()?.size ?: 0}")
-        val match = findMatchingFile(dir, prefix, startTimestampSec)
-        if (match != null) {
-            Log.d(TAG, "Found match in default dir: ${match.name}")
-            return match.name
-        }
+    private fun findRecordings(lookups: List<RecordingLookup>): Map<Int, String> {
+        if (lookups.isEmpty()) return emptyMap()
 
-        // Check custom SAF directory
+        val matches = mutableMapOf<Int, String>()
+        var unmatched = matchRecordings(
+            lookups,
+            getDefaultTranscriptionsDir().listFiles().orEmpty().mapNotNull { toRecordingCandidate(it.name) },
+            matches
+        )
+
         val customUriString = context.config.callRecordingPath
-        Log.d(TAG, "Checking custom SAF path: '$customUriString'")
-        if (customUriString.isNotEmpty()) {
+        if (unmatched.isNotEmpty() && customUriString.isNotEmpty()) {
             try {
-                val treeUri = Uri.parse(customUriString)
-                val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
-                if (treeDoc != null) {
-                    val allFiles = treeDoc.listFiles()
-                    val prefixMatches = allFiles.filter { it.name?.startsWith(prefix) == true && isRecordingFile(it.name!!) }
-                    Log.d(TAG, "SAF dir has ${allFiles.size} files, ${prefixMatches.size} match prefix '$prefix'")
-                    prefixMatches.forEach { Log.d(TAG, "  SAF candidate: ${it.name}") }
-                    val matchDoc = prefixMatches
-                        .mapNotNull { doc ->
-                            val name = doc.name ?: return@mapNotNull null
-                            val ts = extractTimestampFromFilename(name) ?: return@mapNotNull null
-                            Pair(name, ts)
-                        }
-                        .filter { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) < 120 }
-                        .minByOrNull { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) }
-                    if (matchDoc != null) {
-                        Log.d(TAG, "Found match in SAF dir: ${matchDoc.first}")
-                        return matchDoc.first
-                    }
+                val treeDoc = DocumentFile.fromTreeUri(context, Uri.parse(customUriString))
+                val candidates = treeDoc?.listFiles().orEmpty().mapNotNull { document ->
+                    document.name?.let(::toRecordingCandidate)
                 }
+                unmatched = matchRecordings(unmatched, candidates, matches)
             } catch (e: Exception) {
                 Log.e(TAG, "SAF lookup failed", e)
             }
         }
 
-        Log.d(TAG, "No recording found for $phoneNumber at $startTimestampSec")
-        return null
+        if (unmatched.isNotEmpty()) {
+            Log.d(TAG, "No recording found for ${unmatched.size} of ${lookups.size} calls")
+        }
+        return matches
     }
 
-    private fun findMatchingFile(dir: File, prefix: String, startTimestampSec: Int): File? {
-        if (!dir.exists()) return null
-        return dir.listFiles()
-            ?.filter { it.name.startsWith(prefix) && isRecordingFile(it.name) }
-            ?.mapNotNull { file ->
-                val ts = extractTimestampFromFilename(file.name) ?: return@mapNotNull null
-                Pair(file, ts)
+    private fun matchRecordings(
+        lookups: List<RecordingLookup>,
+        candidates: List<RecordingCandidate>,
+        matches: MutableMap<Int, String>
+    ): List<RecordingLookup> {
+        val candidatesByNumber = candidates.groupBy { it.phoneNumber }
+        return lookups.filter { lookup ->
+            val sanitizedNumber = lookup.phoneNumber.replace(Regex("[^0-9+]"), "")
+            val match = candidatesByNumber[sanitizedNumber]
+                ?.asSequence()
+                ?.filter { Math.abs(it.timestamp - lookup.startTimestampSec.toLong()) < 120 }
+                ?.minByOrNull { Math.abs(it.timestamp - lookup.startTimestampSec.toLong()) }
+
+            if (match != null) {
+                matches[lookup.id] = match.name
+                false
+            } else {
+                true
             }
-            ?.filter { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) < 120 }
-            ?.minByOrNull { (_, ts) -> Math.abs(ts - startTimestampSec.toLong()) }
-            ?.first
+        }
     }
+
+    private fun toRecordingCandidate(name: String): RecordingCandidate? {
+        if (!isRecordingFile(name)) return null
+        val match = Regex("""^call_(.+)_(\d{8}_\d{6})\.(wav|m4a)$""").find(name) ?: return null
+        val timestamp = extractTimestampFromFilename(name) ?: return null
+        return RecordingCandidate(name, match.groupValues[1], timestamp)
+    }
+
+    private data class RecordingLookup(val id: Int, val phoneNumber: String, val startTimestampSec: Int)
+    private data class RecordingCandidate(val name: String, val phoneNumber: String, val timestamp: Long)
 
     /**
      * Check if a filename is a recording file (supports .wav and legacy .m4a)

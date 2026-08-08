@@ -24,6 +24,8 @@ class GroupedCallsAdapter(
     private val activity: BaseSimpleActivity,
     private val calls: List<RecentCall>,
     private val transcriptionManager: TranscriptionManager,
+    private val recordingsByCallId: Map<Int, String>,
+    private val transcribedRecordings: Set<String>,
     private val onDismissDialog: () -> Unit
 ) : RecyclerView.Adapter<GroupedCallsAdapter.ViewHolder>() {
 
@@ -75,10 +77,10 @@ class GroupedCallsAdapter(
             binding.groupedCallDuration.visibility = View.GONE
         }
 
-        // Find recording for this specific call
-        val recordingName = transcriptionManager.findRecordingForCall(call.phoneNumber, call.startTS)
+        // Recording metadata is preloaded off the main thread before the adapter is attached.
+        val recordingName = recordingsByCallId[call.id]
         val hasRecording = recordingName != null
-        val hasTranscription = hasRecording && transcriptionManager.hasTranscription(recordingName!!)
+        val hasTranscription = recordingName != null && transcribedRecordings.contains(recordingName)
 
         // Expand indicator: only show if there's a recording
         binding.groupedCallIndicator.visibility = if (hasRecording) View.VISIBLE else View.INVISIBLE

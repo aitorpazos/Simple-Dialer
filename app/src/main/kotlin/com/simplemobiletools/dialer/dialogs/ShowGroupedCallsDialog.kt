@@ -5,10 +5,10 @@ import com.simplemobiletools.commons.activities.BaseSimpleActivity
 import com.simplemobiletools.commons.extensions.getAlertDialogBuilder
 import com.simplemobiletools.commons.extensions.setupDialogStuff
 import com.simplemobiletools.commons.extensions.viewBinding
+import com.simplemobiletools.commons.helpers.ensureBackgroundThread
 import com.simplemobiletools.dialer.adapters.GroupedCallsAdapter
 import com.simplemobiletools.dialer.databinding.DialogShowGroupedCallsBinding
 import com.simplemobiletools.dialer.helpers.*
-import com.simplemobiletools.dialer.models.RecentCall
 
 class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayList<Int>, displayName: String = "") {
     private var dialog: AlertDialog? = null
@@ -24,12 +24,25 @@ class ShowGroupedCallsDialog(val activity: BaseSimpleActivity, callIds: ArrayLis
         }
 
         RecentsHelper(activity).getRecentCalls(false) { allRecents ->
-            val recents = allRecents.filter { callIds.contains(it.id) }.toMutableList() as ArrayList<RecentCall>
-            activity.runOnUiThread {
-                GroupedCallsAdapter(activity, recents, transcriptionManager) {
-                    dialog?.dismiss()
-                }.apply {
-                    binding.selectGroupedCallsList.adapter = this
+            ensureBackgroundThread {
+                val recents = ArrayList(allRecents.filter { it.id in callIds })
+                val recordingsByCallId = transcriptionManager.findRecordingsForCalls(recents)
+                val transcribedRecordings = recordingsByCallId.values
+                    .filter(transcriptionManager::hasTranscription)
+                    .toSet()
+
+                activity.runOnUiThread {
+                    GroupedCallsAdapter(
+                        activity,
+                        recents,
+                        transcriptionManager,
+                        recordingsByCallId,
+                        transcribedRecordings
+                    ) {
+                        dialog?.dismiss()
+                    }.apply {
+                        binding.selectGroupedCallsList.adapter = this
+                    }
                 }
             }
         }
