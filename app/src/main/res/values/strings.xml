@@ -88,13 +88,18 @@
     <string name="call_recording_started">Recording started</string>
     <string name="call_recording_stopped">Recording saved</string>
     <string name="call_recording_failed">Recording failed</string>
+    <string name="recording_failure_permission">Recording failed: microphone permission is missing</string>
+    <string name="recording_failure_foreground">Recording failed: Android blocked background microphone access</string>
+    <string name="recording_failure_audio_source">Recording failed: no compatible audio input is available</string>
+    <string name="recording_failure_silent">Recording failed: Android returned silent audio. Try speakerphone with Auto or Microphone source.</string>
+    <string name="recording_failure_storage">Recording failed: the audio file could not be saved</string>
     <string name="call_recording_path">Recordings storage path</string>
     <string name="call_recording_path_default">Default (app storage)</string>
     <string name="call_recording_path_change">Choose different folder</string>
 
     <!-- Audio source selection -->
     <string name="call_recording_audio_source">Recording audio source</string>
-    <string name="audio_source_auto">Auto (recommended)</string>
+    <string name="audio_source_auto">Auto (microphone first)</string>
     <string name="audio_source_voice_call">Voice Call (requires system permission)</string>
     <string name="audio_source_voice_communication">Voice Communication</string>
     <string name="audio_source_voice_recognition">Voice Recognition</string>
@@ -102,9 +107,9 @@
 
     <!-- Accessibility Service for Call Recording -->
     <string name="accessibility_service_label">Call Recording Audio</string>
-    <string name="accessibility_service_description">Enables reliable call audio capture. This service allows the dialer to record both sides of phone calls. It does not read or interact with screen content.</string>
-    <string name="accessibility_service_required">Enable accessibility service for reliable call recording</string>
-    <string name="accessibility_service_required_summary">Required to capture both sides of the conversation on most devices. Tap to open Accessibility settings.</string>
+    <string name="accessibility_service_description">Legacy integration. Accessibility does not bypass Android call-audio restrictions and is no longer required for recording.</string>
+    <string name="accessibility_service_required">Legacy accessibility integration</string>
+    <string name="accessibility_service_required_summary">Not required. Android only exposes the protected call stream to privileged system apps.</string>
     <string name="accessibility_service_enabled">Accessibility service enabled ✓</string>
     <string name="accessibility_service_disabled">Accessibility service not enabled</string>
 

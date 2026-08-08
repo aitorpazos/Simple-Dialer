@@ -32,7 +32,8 @@ class CallSummaryManager(private val context: Context) {
         contactName: String,
         phoneNumber: String,
         durationSeconds: Int,
-        recordingResult: RecordingResult?
+        recordingResult: RecordingResult?,
+        recordingFailure: RecordingFailure? = null,
     ): Int {
         createNotificationChannel()
 
@@ -45,7 +46,17 @@ class CallSummaryManager(private val context: Context) {
             contentLines.add(context.getString(R.string.call_summary_number, phoneNumber))
         }
         if (recordingResult != null) {
-            contentLines.add(context.getString(R.string.call_summary_recorded, recordingResult.name))
+            val source = recordingResult.audioSource?.let { " ($it)" }.orEmpty()
+            contentLines.add(context.getString(R.string.call_summary_recorded, recordingResult.name) + source)
+        } else if (recordingFailure != null) {
+            val failureMessage = when (recordingFailure) {
+                RecordingFailure.PERMISSION_MISSING -> R.string.recording_failure_permission
+                RecordingFailure.FOREGROUND_START_FAILED -> R.string.recording_failure_foreground
+                RecordingFailure.AUDIO_SOURCE_UNAVAILABLE -> R.string.recording_failure_audio_source
+                RecordingFailure.SILENT_AUDIO -> R.string.recording_failure_silent
+                RecordingFailure.STORAGE_ERROR -> R.string.recording_failure_storage
+            }
+            contentLines.add(context.getString(failureMessage))
         }
 
         val bigTextStyle = NotificationCompat.BigTextStyle()

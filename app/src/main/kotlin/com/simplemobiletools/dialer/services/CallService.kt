@@ -1,13 +1,17 @@
 package com.simplemobiletools.dialer.services
 
+import android.Manifest
 import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.os.Build
+import android.util.Log
 import android.os.Handler
 import android.os.Looper
 import android.telecom.Call
@@ -27,6 +31,11 @@ import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.receivers.ActiveCallActionReceiver
 
 class CallService : InCallService() {
+    companion object {
+        private const val TAG = "CallService"
+        private const val RECORDING_FOREGROUND_ID = 4002
+    }
+
     private val callNotificationManager by lazy { CallNotificationManager(this) }
     private val callRecordingManager by lazy { CallRecordingManager(this) }
     private val callSummaryManager by lazy { CallSummaryManager(this) }
@@ -43,6 +52,9 @@ class CallService : InCallService() {
     private var currentSimId: String = ""
     private var autoAnswerRunnable: Runnable? = null
     private var autoAnswerCountdown = 0
+    private var recordingStartRunnable: Runnable? = null
+    private var callEndingHandled = false
+    private var recordingForegroundActive = false
 
     private val callListener = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
@@ -54,9 +66,13 @@ class CallService : InCallService() {
                     // return to the call after switching apps.
                     callNotificationManager.setupNotification()
                 }
-                Call.STATE_DISCONNECTED, Call.STATE_DISCONNECTING -> {
+                Call.STATE_DISCONNECTED -> {
                     onCallEnding(call)
                     callNotificationManager.cancelNotification()
+                }
+                Call.STATE_DISCONNECTING -> {
+                    cancelPendingRecordingStart()
+                    callNotificationManager.setupNotification()
                 }
                 else -> callNotificationManager.setupNotification()
             }
@@ -68,6 +84,13 @@ class CallService : InCallService() {
         CallManager.onCallAdded(call)
         CallManager.inCallService = this
         call.registerCallback(callListener)
+
+        // Reset state that must only live for one call.
+        callEndingHandled = false
+        callStartTimeMs = 0L
+        currentRecordingResult = null
+        callRecordingManager.clearLastFailure()
+        cancelPendingRecordingStart()
 
         // Extract call info
         extractCallInfo(call)
@@ -94,6 +117,10 @@ class CallService : InCallService() {
     override fun onCallRemoved(call: Call) {
         super.onCallRemoved(call)
         cancelAutoAnswer()
+        cancelPendingRecordingStart()
+        if (!callEndingHandled && (callStartTimeMs > 0L || callRecordingManager.isCurrentlyRecording())) {
+            onCallEnding(call)
+        }
         call.unregisterCallback(callListener)
         val wasPrimaryCall = call == CallManager.getPrimaryCall()
         CallManager.onCallRemoved(call)
@@ -125,10 +152,16 @@ class CallService : InCallService() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        cancelAutoAnswer()
+        cancelPendingRecordingStart()
+        if (callRecordingManager.isCurrentlyRecording()) {
+            callRecordingManager.stopRecording()
+        }
+        stopRecordingForeground()
         callNotificationManager.cancelNotification()
         dismissActiveCallNotification()
         greetingManager.shutdown()
+        super.onDestroy()
     }
 
     private fun extractCallInfo(call: Call) {
@@ -240,6 +273,9 @@ class CallService : InCallService() {
     }
 
     private fun onCallActive(call: Call) {
+        // ACTIVE can be emitted again after details/audio-route changes or after
+        // a hold. Greeting and recording must only be started once per call.
+        if (callStartTimeMs > 0L) return
         callStartTimeMs = System.currentTimeMillis()
 
         // Cancel any pending auto-answer countdown since the call is now active
@@ -304,22 +340,39 @@ class CallService : InCallService() {
     }
 
     private fun startRecordingIfEnabled() {
-        if (config.callRecordingEnabled) {
-            // Delay recording start to let the audio framework fully route
-            // call audio after the call becomes active. On AOSP-based ROMs
-            // (LineageOS, /e/OS) audio routing takes longer than on OEM ROMs.
-            // 1500ms is a safe margin that avoids initial silence.
-            handler.postDelayed({
-                val number = currentCallNumber.ifEmpty { "unknown" }
-                val success = callRecordingManager.startRecording(number)
-                if (!success) {
-                    currentRecordingResult = null
-                }
-            }, 1500)
+        if (!config.callRecordingEnabled || callRecordingManager.isCurrentlyRecording()) return
+
+        cancelPendingRecordingStart()
+        recordingStartRunnable = Runnable {
+            recordingStartRunnable = null
+            if (callEndingHandled || CallManager.getState() != Call.STATE_ACTIVE) return@Runnable
+
+            if (!startRecordingForeground()) {
+                callRecordingManager.setLastFailure(RecordingFailure.FOREGROUND_START_FAILED)
+                return@Runnable
+            }
+
+            val number = currentCallNumber.ifEmpty { "unknown" }
+            if (!callRecordingManager.startRecording(number)) {
+                currentRecordingResult = null
+                stopRecordingForeground()
+            }
         }
+        // A short delay lets Telecom finish the ACTIVE route transition without
+        // blocking several seconds of the call as the previous source probe did.
+        handler.postDelayed(recordingStartRunnable!!, 350)
+    }
+
+    private fun cancelPendingRecordingStart() {
+        recordingStartRunnable?.let(handler::removeCallbacks)
+        recordingStartRunnable = null
     }
 
     private fun onCallEnding(call: Call) {
+        if (callEndingHandled) return
+        callEndingHandled = true
+        cancelPendingRecordingStart()
+
         // Stop greeting if still playing
         greetingManager.stopGreeting()
 
@@ -333,6 +386,12 @@ class CallService : InCallService() {
             null
         }
         currentRecordingResult = recordingResult
+        stopRecordingForeground()
+        val recordingFailure = if (config.callRecordingEnabled && recordingResult == null) {
+            callRecordingManager.getLastFailure()
+        } else {
+            null
+        }
 
         // Calculate duration
         val durationSeconds = if (callStartTimeMs > 0) {
@@ -348,7 +407,8 @@ class CallService : InCallService() {
                 contactName = name,
                 phoneNumber = currentCallNumber,
                 durationSeconds = durationSeconds,
-                recordingResult = recordingResult
+                recordingResult = recordingResult,
+                recordingFailure = recordingFailure,
             )
 
             // Trigger transcription automatically if recording exists and transcription is enabled
@@ -385,6 +445,63 @@ class CallService : InCallService() {
         currentSimId = ""
         autoAnswerRunnable = null
         autoAnswerCountdown = 0
+    }
+
+    private fun startRecordingForeground(): Boolean {
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            callRecordingManager.setLastFailure(RecordingFailure.PERMISSION_MISSING)
+            Log.e(TAG, "Cannot start recording foreground service without RECORD_AUDIO")
+            return false
+        }
+
+        return try {
+            createActiveCallChannel()
+            val contentIntent = PendingIntent.getActivity(
+                this,
+                4,
+                CallActivity.getStartIntent(this),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            val notification = NotificationCompat.Builder(this, ACTIVE_CALL_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_phone_vector)
+                .setContentTitle(getString(R.string.call_recording))
+                .setContentText(getString(R.string.call_recording_started))
+                .setContentIntent(contentIntent)
+                .setOngoing(true)
+                .setSilent(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .build()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val types = ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL or
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                startForeground(RECORDING_FOREGROUND_ID, notification, types)
+            } else {
+                startForeground(RECORDING_FOREGROUND_ID, notification)
+            }
+            recordingForegroundActive = true
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not enter microphone foreground mode", e)
+            false
+        }
+    }
+
+    private fun stopRecordingForeground() {
+        if (!recordingForegroundActive) return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not stop recording foreground mode", e)
+        } finally {
+            recordingForegroundActive = false
+        }
     }
 
     // ---- Silent / DND detection ----

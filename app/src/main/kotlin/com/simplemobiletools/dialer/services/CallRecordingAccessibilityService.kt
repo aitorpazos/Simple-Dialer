@@ -8,15 +8,11 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 
 /**
- * Accessibility service that enables reliable call audio capture.
+ * Legacy accessibility integration retained for existing installations.
  *
- * On many Android devices (Android 9+), the VOICE_CALL audio source is blocked
- * for third-party apps. Having an active AccessibilityService signals to the
- * Android audio framework that the app has elevated privileges, which unlocks
- * the VOICE_CALL source on many OEMs (Samsung, Xiaomi, OnePlus, Pixel, etc.).
- *
- * This service does not read or interact with screen content — it exists solely
- * to enable the VOICE_CALL audio source for reliable call recording.
+ * An AccessibilityService does not grant CAPTURE_AUDIO_OUTPUT and therefore
+ * cannot unlock Android's protected VOICE_CALL stream. Recording no longer
+ * depends on this service. It does not read or interact with screen content.
  */
 class CallRecordingAccessibilityService : AccessibilityService() {
 

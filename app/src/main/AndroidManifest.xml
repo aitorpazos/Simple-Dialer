@@ -196,6 +196,7 @@
             android:name=".services.CallService"
             android:enabled="true"
             android:exported="true"
+            android:foregroundServiceType="phoneCall|microphone"
             android:permission="android.permission.BIND_INCALL_SERVICE">
             <meta-data
                 android:name="android.telecom.IN_CALL_SERVICE_UI"
@@ -220,20 +221,6 @@
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
-
-        <service
-            android:name=".services.CallRecordingAccessibilityService"
-            android:enabled="true"
-            android:exported="true"
-            android:label="@string/accessibility_service_label"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_config" />
-        </service>
 
         <receiver
             android:name=".receivers.CallActionReceiver"

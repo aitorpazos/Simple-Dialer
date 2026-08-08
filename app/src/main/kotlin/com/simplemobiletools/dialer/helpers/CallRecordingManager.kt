@@ -1,5 +1,6 @@
 package com.simplemobiletools.dialer.helpers
 
+import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioFormat
@@ -11,56 +12,36 @@ import android.os.Environment
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.simplemobiletools.dialer.extensions.config
-import com.simplemobiletools.dialer.services.CallRecordingAccessibilityService
 import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 import kotlin.concurrent.thread
+import kotlin.math.abs
 
 /**
- * Call recording manager with intelligent audio source selection.
+ * Records call-time microphone audio as PCM WAV.
  *
- * Audio capture on Android depends on:
- *   1. Whether the app holds CAPTURE_AUDIO_OUTPUT (signature/privileged permission)
- *   2. Whether the accessibility service is enabled (unlocks VOICE_CALL on many devices)
- *   3. The device's audio HAL behaviour and ROM (OEM vs AOSP-based)
- *
- * When CAPTURE_AUDIO_OUTPUT is granted (privileged system app):
- *   - VOICE_CALL works reliably — captures both sides
- *
- * When installed as a regular app with accessibility service enabled:
- *   - VOICE_CALL is attempted first. The accessibility service signals elevated
- *     privileges to the audio framework and unlocks VOICE_CALL on many devices,
- *     including some AOSP-based ROMs (/e/OS, LineageOS on certain hardware).
- *   - Falls back to VOICE_COMMUNICATION → MIC if VOICE_CALL throws.
- *   - If VOICE_CALL starts without error but captures silence on a particular
- *     device, the user should switch audio source manually in Settings.
- *
- * When installed as a regular app without accessibility service:
- *   - VOICE_CALL is skipped (always produces silence without privileges).
- *   - VOICE_COMMUNICATION → VOICE_RECOGNITION → MIC are tried in order.
- *   - MIC captures the local microphone (both sides audible on speakerphone).
- *
- * IMPORTANT: We do NOT override AudioManager.mode. On Android 10+ the telecom
- * framework owns audio mode during calls. Overriding it can cause the audio HAL
- * to reset routing, resulting in silence.
+ * Android only exposes the actual voice-call stream to privileged/system apps
+ * holding CAPTURE_AUDIO_OUTPUT. An AccessibilityService does not grant that
+ * permission. For regular installations, automatic mode therefore starts with
+ * MIC and falls back only when that source cannot be opened. This guarantees
+ * the app captures the local microphone where Android permits it; on devices
+ * that block remote-call capture, speakerphone is required to make the remote
+ * party audible to the microphone.
  */
 class CallRecordingManager(private val context: Context) {
     companion object {
         private const val TAG = "CallRecordingManager"
-
-        private const val SAMPLE_RATE = 16000
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-
-        // Silence detection: check amplitude after this many milliseconds
-        private const val SILENCE_CHECK_MS = 3000L
-        // If max amplitude is below this threshold after SILENCE_CHECK_MS, consider it silent
-        private const val SILENCE_THRESHOLD = 50
+        private const val WAV_HEADER_SIZE = 44L
+        private const val STOP_TIMEOUT_MS = 5000L
+        private val SAMPLE_RATES = intArrayOf(16000, 48000, 44100, 8000)
     }
 
     private var audioRecord: AudioRecord? = null
@@ -68,300 +49,247 @@ class CallRecordingManager(private val context: Context) {
     private var currentRecordingFile: File? = null
     private var currentRecordingUri: Uri? = null
     private var currentRecordingName: String? = null
-    @Volatile private var isRecording = false
-    private var activeAudioSource: String? = null
-    // Temp WAV file — we always write to a local file first, then copy to SAF if needed
     private var tempWavFile: File? = null
+    private var activeAudioSource: String? = null
+    private var activeSampleRate = 16000
+
+    @Volatile
+    private var isRecording = false
+
+    @Volatile
+    private var isStarting = false
+
+    @Volatile
+    private var dataBytesWritten = 0L
+
+    @Volatile
+    private var maxCapturedAmplitude = 0
+
+    @Volatile
+    private var writerFailed = false
+
+    @Volatile
+    private var lastFailure: RecordingFailure? = null
 
     private fun getDefaultRecordingsDir(): File {
         val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CallRecordings")
-        if (!dir.exists()) {
-            dir.mkdirs()
+        if (!dir.exists() && !dir.mkdirs()) {
+            Log.e(TAG, "Could not create recordings directory: ${dir.absolutePath}")
         }
         return dir
     }
 
     private fun getTempDir(): File {
         val dir = File(context.cacheDir, "call_recordings_tmp")
-        if (!dir.exists()) dir.mkdirs()
+        if (!dir.exists() && !dir.mkdirs()) {
+            Log.e(TAG, "Could not create temporary recordings directory: ${dir.absolutePath}")
+        }
         return dir
     }
 
-    /**
-     * Check if the app has CAPTURE_AUDIO_OUTPUT permission granted.
-     * This is a signature/privileged permission — only granted to system apps
-     * or apps signed with the platform key.
-     */
-    private fun hasCaptureAudioOutput(): Boolean {
-        return context.checkSelfPermission(android.Manifest.permission.CAPTURE_AUDIO_OUTPUT) ==
-            PackageManager.PERMISSION_GRANTED
+    private fun hasPermission(permission: String): Boolean {
+        return context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 
-    /**
-     * Build the audio source priority list based on available permissions.
-     *
-     * With CAPTURE_AUDIO_OUTPUT: VOICE_CALL is reliable, no fallback needed
-     * (but we still include fallbacks for robustness).
-     *
-     * Without CAPTURE_AUDIO_OUTPUT (regular app install):
-     *   - If the accessibility service is enabled, VOICE_CALL is attempted first.
-     *     The accessibility service signals elevated privileges to the audio
-     *     framework and unlocks VOICE_CALL on many devices — including some
-     *     AOSP-based ROMs (/e/OS, LineageOS on certain hardware).
-     *   - If VOICE_CALL produces silence (starts without error but captures no
-     *     audio), the user should switch to a different source in Settings.
-     *   - Without accessibility, VOICE_CALL is skipped entirely since it will
-     *     always produce silence on non-privileged installs.
-     *   - VOICE_COMMUNICATION captures the mic stream during a call.
-     *   - MIC always works and captures the local microphone (both sides audible
-     *     when speakerphone is on).
-     *
-     * The user can also override the audio source manually in settings.
-     */
     private fun getAudioSourcePriority(): List<Pair<Int, String>> {
-        val hasCapturePermission = hasCaptureAudioOutput()
-        val accessibilityEnabled = CallRecordingAccessibilityService.isServiceEnabled(context)
+        val privileged = hasPermission(Manifest.permission.CAPTURE_AUDIO_OUTPUT)
+        val policySources = CallRecordingPolicy.sourcePriority(
+            setting = context.config.callRecordingAudioSource,
+            hasCaptureAudioOutput = privileged,
+        )
 
-        Log.d(TAG, "Audio source selection: CAPTURE_AUDIO_OUTPUT=$hasCapturePermission, " +
-            "accessibility=$accessibilityEnabled")
+        Log.i(
+            TAG,
+            "Audio source policy: privileged=$privileged, " +
+                "sources=${policySources.joinToString()}",
+        )
 
-        // Check user override
-        val userOverride = context.config.callRecordingAudioSource
-        if (userOverride != AUDIO_SOURCE_AUTO) {
-            val source = audioSourceFromSetting(userOverride)
-            if (source != null) {
-                Log.d(TAG, "Using user-selected audio source: $userOverride")
-                return listOf(source)
+        return policySources.map { source ->
+            when (source) {
+                CallRecordingPolicy.Source.VOICE_CALL -> MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL"
+                CallRecordingPolicy.Source.VOICE_COMMUNICATION ->
+                    MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION"
+                CallRecordingPolicy.Source.VOICE_RECOGNITION ->
+                    MediaRecorder.AudioSource.VOICE_RECOGNITION to "VOICE_RECOGNITION"
+                CallRecordingPolicy.Source.MIC -> MediaRecorder.AudioSource.MIC to "MIC"
             }
-        }
-
-        return when {
-            hasCapturePermission -> {
-                // Best case: privileged app with CAPTURE_AUDIO_OUTPUT
-                // VOICE_CALL is guaranteed to work
-                listOf(
-                    MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
-                    MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
-                    MediaRecorder.AudioSource.MIC to "MIC",
-                )
-            }
-            accessibilityEnabled -> {
-                // Accessibility service is running — try VOICE_CALL first.
-                // On many devices (including some AOSP-based ROMs like /e/OS on
-                // Fairphone), the accessibility service unlocks VOICE_CALL for
-                // third-party apps. If it produces silence on a particular device,
-                // the user can override to VOICE_COMMUNICATION or MIC in Settings.
-                listOf(
-                    MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL",
-                    MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
-                    MediaRecorder.AudioSource.MIC to "MIC",
-                )
-            }
-            else -> {
-                // No special permissions and no accessibility service.
-                // VOICE_CALL will silently produce empty audio — skip it.
-                // VOICE_COMMUNICATION captures the mic stream during a call and on
-                // some HALs includes the remote party; MIC is the safe fallback.
-                listOf(
-                    MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION",
-                    MediaRecorder.AudioSource.VOICE_RECOGNITION to "VOICE_RECOGNITION",
-                    MediaRecorder.AudioSource.MIC to "MIC",
-                )
-            }
-        }
-    }
-
-    private fun audioSourceFromSetting(setting: String): Pair<Int, String>? {
-        return when (setting) {
-            AUDIO_SOURCE_VOICE_CALL -> MediaRecorder.AudioSource.VOICE_CALL to "VOICE_CALL"
-            AUDIO_SOURCE_VOICE_COMMUNICATION -> MediaRecorder.AudioSource.VOICE_COMMUNICATION to "VOICE_COMMUNICATION"
-            AUDIO_SOURCE_VOICE_RECOGNITION -> MediaRecorder.AudioSource.VOICE_RECOGNITION to "VOICE_RECOGNITION"
-            AUDIO_SOURCE_MIC -> MediaRecorder.AudioSource.MIC to "MIC"
-            else -> null
         }
     }
 
     /**
-     * Try each audio source in priority order. For each source, create an
-     * AudioRecord, read a few seconds of PCM data, and check if it's silent.
-     * If silent, try the next source. Once a non-silent source is found (or
-     * all sources are exhausted), commit to recording with the best one.
-     *
-     * We use AudioRecord instead of MediaRecorder because:
-     * 1. MediaRecorder.setAudioSource(VOICE_CALL) silently succeeds on AOSP
-     *    ROMs but records silence — there's no way to detect this.
-     * 2. AudioRecord gives us direct PCM buffer access so we can check
-     *    amplitude in real-time and switch sources if needed.
+     * Opens the first source/rate combination accepted by the device. Unlike the
+     * old implementation, this does not synchronously sample every source for a
+     * second on the Telecom main thread. That delay could consume most of a
+     * short call before recording actually began.
      */
+    @Suppress("DEPRECATION")
     private fun startRecordingWithBestSource(outputFile: File): Boolean {
-        val sources = getAudioSourcePriority()
-        val bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
-            .coerceAtLeast(4096)
-
-        // Log current audio state for diagnostics
         try {
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            Log.d(TAG, "Audio state: mode=${audioManager.mode}, " +
-                "speakerOn=${audioManager.isSpeakerphoneOn}")
+            Log.i(
+                TAG,
+                "Audio state before capture: mode=${audioManager.mode}, " +
+                    "speaker=${audioManager.isSpeakerphoneOn}",
+            )
         } catch (e: Exception) {
-            Log.w(TAG, "Could not read audio state: ${e.message}")
+            Log.w(TAG, "Could not inspect audio state", e)
         }
 
-        for ((source, sourceName) in sources) {
-            try {
-                val recorder = AudioRecord(source, SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, bufferSize)
-                if (recorder.state != AudioRecord.STATE_INITIALIZED) {
-                    Log.w(TAG, "AudioRecord failed to initialize with source=$sourceName")
-                    recorder.release()
-                    continue
-                }
+        for ((source, sourceName) in getAudioSourcePriority()) {
+            for (sampleRate in SAMPLE_RATES) {
+                var recorder: AudioRecord? = null
+                try {
+                    val minimum = AudioRecord.getMinBufferSize(sampleRate, CHANNEL_CONFIG, AUDIO_FORMAT)
+                    if (minimum <= 0) continue
+                    val bufferSize = maxOf(minimum * 2, 4096)
 
-                recorder.startRecording()
-                if (recorder.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
-                    Log.w(TAG, "AudioRecord failed to start recording with source=$sourceName")
-                    recorder.release()
-                    continue
-                }
+                    recorder = AudioRecord(
+                        source,
+                        sampleRate,
+                        CHANNEL_CONFIG,
+                        AUDIO_FORMAT,
+                        bufferSize,
+                    )
+                    if (recorder.state != AudioRecord.STATE_INITIALIZED) {
+                        recorder.release()
+                        continue
+                    }
 
-                // Quick silence check: read ~1 second of audio and check amplitude
-                val checkBuffer = ShortArray(SAMPLE_RATE) // 1 second at 16kHz
-                var totalRead = 0
-                var maxAmp = 0
-                val checkStartMs = System.currentTimeMillis()
-                while (totalRead < checkBuffer.size && (System.currentTimeMillis() - checkStartMs) < 2000) {
-                    val remaining = checkBuffer.size - totalRead
-                    val read = recorder.read(checkBuffer, totalRead, remaining)
-                    if (read > 0) {
-                        for (i in totalRead until totalRead + read) {
-                            val amp = Math.abs(checkBuffer[i].toInt())
-                            if (amp > maxAmp) maxAmp = amp
-                        }
-                        totalRead += read
-                    } else if (read < 0) {
-                        break
+                    recorder.startRecording()
+                    if (recorder.recordingState != AudioRecord.RECORDSTATE_RECORDING) {
+                        recorder.release()
+                        continue
+                    }
+
+                    audioRecord = recorder
+                    activeAudioSource = sourceName
+                    activeSampleRate = sampleRate
+                    isRecording = true
+                    recordingThread = thread(name = "CallRecorder") {
+                        writeWavFile(recorder, outputFile, sampleRate, bufferSize)
+                    }
+                    Log.i(TAG, "Recording started: source=$sourceName, sampleRate=$sampleRate")
+                    return true
+                } catch (e: SecurityException) {
+                    Log.w(TAG, "Source $sourceName is not permitted", e)
+                    try {
+                        recorder?.release()
+                    } catch (_: Exception) {
+                    }
+                    // A permission failure is source-specific (notably VOICE_CALL),
+                    // so continue to a legal microphone source when available.
+                    break
+                } catch (e: Exception) {
+                    Log.w(TAG, "Source $sourceName at ${sampleRate}Hz failed", e)
+                    try {
+                        recorder?.release()
+                    } catch (_: Exception) {
                     }
                 }
-
-                Log.i(TAG, "Source $sourceName: 1s check amplitude=$maxAmp (threshold=$SILENCE_THRESHOLD)")
-
-                if (maxAmp < SILENCE_THRESHOLD && sources.indexOf(source to sourceName) < sources.size - 1) {
-                    // Silent and there are more sources to try
-                    Log.w(TAG, "Source $sourceName appears silent, trying next source")
-                    recorder.stop()
-                    recorder.release()
-                    continue
-                }
-
-                // Either non-silent or last source — commit to this one
-                audioRecord = recorder
-                activeAudioSource = sourceName
-                Log.i(TAG, "Recording committed — source=$sourceName, initialAmplitude=$maxAmp")
-
-                // Start the background recording thread
-                isRecording = true
-                recordingThread = thread(name = "CallRecorder") {
-                    writeWavFile(recorder, outputFile, checkBuffer, totalRead)
-                }
-
-                return true
-            } catch (e: Exception) {
-                Log.w(TAG, "Audio source $sourceName failed: ${e.message}")
             }
         }
 
-        Log.e(TAG, "All audio sources failed — cannot record")
+        lastFailure = RecordingFailure.AUDIO_SOURCE_UNAVAILABLE
+        Log.e(TAG, "No audio source could be opened")
         return false
     }
 
-    /**
-     * Write PCM data from AudioRecord to a WAV file.
-     * Includes the initial check buffer that was already read during source probing.
-     */
-    private fun writeWavFile(recorder: AudioRecord, outputFile: File, initialBuffer: ShortArray, initialCount: Int) {
-        val bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
-            .coerceAtLeast(4096)
-        val buffer = ShortArray(bufferSize / 2)
+    private fun writeWavFile(
+        recorder: AudioRecord,
+        outputFile: File,
+        sampleRate: Int,
+        bufferSizeBytes: Int,
+    ) {
+        val buffer = ShortArray(maxOf(bufferSizeBytes / 2, 2048))
+        var localDataBytes = 0L
+        var localMaxAmplitude = 0
 
         try {
-            FileOutputStream(outputFile).use { fos ->
-                // Write WAV header placeholder (44 bytes) — we'll update it when done
-                val header = ByteArray(44)
-                fos.write(header)
+            outputFile.parentFile?.mkdirs()
+            FileOutputStream(outputFile).use { output ->
+                output.write(ByteArray(WAV_HEADER_SIZE.toInt()))
 
-                var totalDataBytes = 0L
-
-                // Write the initial check buffer first
-                if (initialCount > 0) {
-                    val bytes = shortsToBytes(initialBuffer, initialCount)
-                    fos.write(bytes)
-                    totalDataBytes += bytes.size
-                }
-
-                // Continue recording
                 while (isRecording) {
-                    val read = recorder.read(buffer, 0, buffer.size)
-                    if (read > 0) {
-                        val bytes = shortsToBytes(buffer, read)
-                        fos.write(bytes)
-                        totalDataBytes += bytes.size
-                    } else if (read < 0) {
-                        Log.e(TAG, "AudioRecord.read error: $read")
+                    val read = try {
+                        recorder.read(buffer, 0, buffer.size)
+                    } catch (e: Exception) {
+                        if (isRecording) {
+                            Log.e(TAG, "AudioRecord.read failed", e)
+                            writerFailed = true
+                        }
                         break
                     }
+
+                    when {
+                        read > 0 -> {
+                            for (index in 0 until read) {
+                                localMaxAmplitude = maxOf(localMaxAmplitude, abs(buffer[index].toInt()))
+                            }
+                            val bytes = shortsToBytes(buffer, read)
+                            output.write(bytes)
+                            localDataBytes += bytes.size
+                            dataBytesWritten = localDataBytes
+                            maxCapturedAmplitude = localMaxAmplitude
+                        }
+                        read < 0 -> {
+                            if (isRecording) {
+                                Log.e(TAG, "AudioRecord.read returned error $read")
+                                writerFailed = true
+                            }
+                            break
+                        }
+                    }
                 }
-
-                // Flush and update WAV header with correct sizes
-                fos.flush()
-
-                // Update WAV header
-                updateWavHeader(outputFile, totalDataBytes)
+                output.flush()
             }
+
+            updateWavHeader(outputFile, localDataBytes, sampleRate)
         } catch (e: Exception) {
-            Log.e(TAG, "Error writing WAV file", e)
+            writerFailed = true
+            Log.e(TAG, "Could not write WAV recording", e)
         } finally {
             try {
-                recorder.stop()
-            } catch (_: Exception) {}
+                if (recorder.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                    recorder.stop()
+                }
+            } catch (_: Exception) {
+            }
             try {
                 recorder.release()
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
     private fun shortsToBytes(shorts: ShortArray, count: Int): ByteArray {
         val bytes = ByteArray(count * 2)
-        val bb = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
-        for (i in 0 until count) {
-            bb.putShort(shorts[i])
+        val byteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        for (index in 0 until count) {
+            byteBuffer.putShort(shorts[index])
         }
         return bytes
     }
 
-    private fun updateWavHeader(file: File, dataSize: Long) {
-        try {
-            RandomAccessFile(file, "rw").use { raf ->
-                val totalSize = dataSize + 36 // 44 - 8 header bytes
-                val channels = 1
-                val bitsPerSample = 16
-                val byteRate = SAMPLE_RATE * channels * bitsPerSample / 8
+    private fun updateWavHeader(file: File, dataSize: Long, sampleRate: Int) {
+        RandomAccessFile(file, "rw").use { output ->
+            val channels = 1
+            val bitsPerSample = 16
+            val byteRate = sampleRate * channels * bitsPerSample / 8
 
-                raf.seek(0)
-                raf.write("RIFF".toByteArray())
-                raf.write(intToLittleEndian(totalSize.toInt()))
-                raf.write("WAVE".toByteArray())
-                raf.write("fmt ".toByteArray())
-                raf.write(intToLittleEndian(16)) // PCM chunk size
-                raf.write(shortToLittleEndian(1)) // PCM format
-                raf.write(shortToLittleEndian(channels))
-                raf.write(intToLittleEndian(SAMPLE_RATE))
-                raf.write(intToLittleEndian(byteRate))
-                raf.write(shortToLittleEndian(channels * bitsPerSample / 8)) // block align
-                raf.write(shortToLittleEndian(bitsPerSample))
-                raf.write("data".toByteArray())
-                raf.write(intToLittleEndian(dataSize.toInt()))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to update WAV header", e)
+            output.seek(0)
+            output.write("RIFF".toByteArray())
+            output.write(intToLittleEndian((dataSize + 36).toInt()))
+            output.write("WAVE".toByteArray())
+            output.write("fmt ".toByteArray())
+            output.write(intToLittleEndian(16))
+            output.write(shortToLittleEndian(1))
+            output.write(shortToLittleEndian(channels))
+            output.write(intToLittleEndian(sampleRate))
+            output.write(intToLittleEndian(byteRate))
+            output.write(shortToLittleEndian(channels * bitsPerSample / 8))
+            output.write(shortToLittleEndian(bitsPerSample))
+            output.write("data".toByteArray())
+            output.write(intToLittleEndian(dataSize.toInt()))
         }
     }
 
@@ -370,150 +298,203 @@ class CallRecordingManager(private val context: Context) {
             (value and 0xFF).toByte(),
             (value shr 8 and 0xFF).toByte(),
             (value shr 16 and 0xFF).toByte(),
-            (value shr 24 and 0xFF).toByte()
+            (value shr 24 and 0xFF).toByte(),
         )
     }
 
     private fun shortToLittleEndian(value: Int): ByteArray {
         return byteArrayOf(
             (value and 0xFF).toByte(),
-            (value shr 8 and 0xFF).toByte()
+            (value shr 8 and 0xFF).toByte(),
         )
     }
 
+    @Synchronized
     fun startRecording(phoneNumber: String): Boolean {
-        if (isRecording) return false
+        if (isRecording || isStarting) return false
 
+        lastFailure = null
+        resetSessionState()
+
+        if (!hasPermission(Manifest.permission.RECORD_AUDIO)) {
+            lastFailure = RecordingFailure.PERMISSION_MISSING
+            Log.e(TAG, "RECORD_AUDIO permission is missing")
+            return false
+        }
+
+        isStarting = true
         try {
-            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val sanitizedNumber = phoneNumber.replace(Regex("[^0-9+]"), "")
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            val sanitizedNumber = phoneNumber.replace(Regex("[^0-9+]"), "").ifEmpty { "unknown" }
             val filename = "call_${sanitizedNumber}_$timestamp.wav"
             currentRecordingName = filename
 
-            // Always record to a temp file first, then copy to SAF if needed
-            val tempFile = File(getTempDir(), filename)
-            tempWavFile = tempFile
-
-            val customUriString = context.config.callRecordingPath
-            if (customUriString.isNotEmpty()) {
-                val treeUri = Uri.parse(customUriString)
-                val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
-                if (treeDoc != null && treeDoc.canWrite()) {
-                    // We'll copy to SAF on stop
-                    currentRecordingUri = null // set on stop
-                    val started = startRecordingWithBestSource(tempFile)
-                    if (started) {
-                        return true
-                    } else {
-                        tempFile.delete()
-                        tempWavFile = null
-                        return false
-                    }
+            val customTree = context.config.callRecordingPath.takeIf { it.isNotEmpty() }?.let { path ->
+                try {
+                    DocumentFile.fromTreeUri(context, Uri.parse(path))?.takeIf { it.canWrite() }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Configured recordings folder is unavailable", e)
+                    null
                 }
             }
 
-            // Default: use app-private storage
-            val defaultDir = getDefaultRecordingsDir()
-            currentRecordingFile = File(defaultDir, filename)
-            // Record directly to the default location
-            tempWavFile = currentRecordingFile
-            val started = startRecordingWithBestSource(currentRecordingFile!!)
-            if (started) {
-                return true
+            val outputFile = if (customTree != null) {
+                File(getTempDir(), filename).also { tempWavFile = it }
             } else {
-                currentRecordingFile?.delete()
-                currentRecordingFile = null
-                tempWavFile = null
-                return false
+                File(getDefaultRecordingsDir(), filename).also {
+                    currentRecordingFile = it
+                    tempWavFile = it
+                }
             }
+
+            val started = startRecordingWithBestSource(outputFile)
+            if (!started) {
+                outputFile.delete()
+                resetSessionState()
+            }
+            return started
         } catch (e: Exception) {
-            Log.e(TAG, "startRecording failed", e)
-            cleanup()
+            lastFailure = RecordingFailure.STORAGE_ERROR
+            Log.e(TAG, "Could not start recording", e)
+            tempWavFile?.delete()
+            resetSessionState()
             return false
+        } finally {
+            isStarting = false
         }
     }
 
+    @Synchronized
     fun stopRecording(): RecordingResult? {
         if (!isRecording) return null
 
         val name = currentRecordingName
+        val source = activeAudioSource
+        val sampleRate = activeSampleRate
+        val outputFile = tempWavFile
         isRecording = false
 
-        // Wait for the recording thread to finish writing
+        // Explicitly stop capture to unblock a pending AudioRecord.read().
         try {
-            recordingThread?.join(5000)
-        } catch (_: Exception) {}
-        recordingThread = null
+            audioRecord?.stop()
+        } catch (_: Exception) {
+        }
 
-        Log.i(TAG, "Recording stopped — source=$activeAudioSource, file=${name ?: "null"}")
+        try {
+            recordingThread?.join(STOP_TIMEOUT_MS)
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
 
-        if (name == null) {
-            cleanup()
+        if (recordingThread?.isAlive == true) {
+            writerFailed = true
+            Log.e(TAG, "Recording writer did not stop within ${STOP_TIMEOUT_MS}ms")
+        }
+
+        Log.i(
+            TAG,
+            "Recording stopped: source=$source, sampleRate=$sampleRate, " +
+                "bytes=$dataBytesWritten, maxAmplitude=$maxCapturedAmplitude, file=$name",
+        )
+
+        if (
+            name == null || outputFile == null || writerFailed || !outputFile.exists() ||
+            outputFile.length() <= WAV_HEADER_SIZE
+        ) {
+            lastFailure = RecordingFailure.STORAGE_ERROR
+            outputFile?.delete()
+            resetSessionState()
             return null
         }
 
-        val tempFile = tempWavFile
-        var resultUri: Uri? = currentRecordingUri
-        var resultFile: File? = currentRecordingFile
+        if (!CallRecordingPolicy.isUsableRecording(dataBytesWritten, maxCapturedAmplitude)) {
+            lastFailure = RecordingFailure.SILENT_AUDIO
+            Log.e(TAG, "Discarding silent recording from source=$source")
+            outputFile.delete()
+            resetSessionState()
+            return null
+        }
 
-        // If recording to SAF, copy the temp file to the SAF folder
-        val customUriString = context.config.callRecordingPath
-        if (customUriString.isNotEmpty() && tempFile != null && tempFile.exists() && resultFile == null) {
+        var resultFile = currentRecordingFile
+        var resultUri = currentRecordingUri
+        val customPath = context.config.callRecordingPath
+
+        if (customPath.isNotEmpty() && resultFile == null) {
             try {
-                val treeUri = Uri.parse(customUriString)
-                val treeDoc = DocumentFile.fromTreeUri(context, treeUri)
-                if (treeDoc != null && treeDoc.canWrite()) {
-                    val newDoc = treeDoc.createFile("audio/wav", name)
-                    if (newDoc != null) {
-                        context.contentResolver.openOutputStream(newDoc.uri)?.use { out ->
-                            tempFile.inputStream().use { inp -> inp.copyTo(out) }
-                        }
-                        resultUri = newDoc.uri
-                        Log.i(TAG, "Copied recording to SAF: ${newDoc.uri}")
-                    }
+                val tree = DocumentFile.fromTreeUri(context, Uri.parse(customPath))
+                val document = tree?.takeIf { it.canWrite() }?.createFile("audio/wav", name)
+                if (document != null) {
+                    context.contentResolver.openOutputStream(document.uri)?.use { destination ->
+                        outputFile.inputStream().use { sourceStream -> sourceStream.copyTo(destination) }
+                    } ?: throw IllegalStateException("Could not open recordings folder output stream")
+                    resultUri = document.uri
+                    outputFile.delete()
+                } else {
+                    throw IllegalStateException("Could not create recording in selected folder")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to copy recording to SAF", e)
+                // Never lose a valid recording because a SAF folder became stale.
+                Log.e(TAG, "Could not save to selected folder; preserving in default folder", e)
+                try {
+                    val fallback = File(getDefaultRecordingsDir(), name)
+                    outputFile.copyTo(fallback, overwrite = true)
+                    outputFile.delete()
+                    resultFile = fallback
+                    resultUri = Uri.fromFile(fallback)
+                } catch (fallbackError: Exception) {
+                    lastFailure = RecordingFailure.STORAGE_ERROR
+                    Log.e(TAG, "Could not preserve recording in fallback folder", fallbackError)
+                    resetSessionState()
+                    return null
+                }
             }
-            // Clean up temp file
-            try { tempFile.delete() } catch (_: Exception) {}
         }
 
-        // If we didn't write to SAF and the file is in the default dir, set resultFile
-        if (resultFile == null && tempFile != null && tempFile.exists()) {
-            resultFile = tempFile
-        }
-
-        // Build final URI
         if (resultUri == null && resultFile != null) {
             resultUri = Uri.fromFile(resultFile)
         }
 
-        cleanup()
-        return RecordingResult(name, resultUri, resultFile)
+        val result = RecordingResult(name, resultUri, resultFile, source, sampleRate)
+        resetSessionState()
+        return result
     }
 
-    private fun cleanup() {
+    private fun resetSessionState() {
         audioRecord = null
         recordingThread = null
-        isRecording = false
-        activeAudioSource = null
+        currentRecordingFile = null
+        currentRecordingUri = null
+        currentRecordingName = null
         tempWavFile = null
+        activeAudioSource = null
+        activeSampleRate = 16000
+        isRecording = false
+        dataBytesWritten = 0L
+        maxCapturedAmplitude = 0
+        writerFailed = false
     }
 
-    fun isCurrentlyRecording() = isRecording
+    fun isCurrentlyRecording(): Boolean = isRecording
 
-    fun getCurrentRecordingName() = currentRecordingName
+    fun getCurrentRecordingName(): String? = currentRecordingName
 
-    /**
-     * Returns the audio source currently being used, or null if not recording.
-     * Useful for diagnostics.
-     */
     fun getActiveAudioSource(): String? = activeAudioSource
+
+    fun getLastFailure(): RecordingFailure? = lastFailure
+
+    fun setLastFailure(failure: RecordingFailure) {
+        lastFailure = failure
+    }
+
+    fun clearLastFailure() {
+        lastFailure = null
+    }
 }
 
 data class RecordingResult(
     val name: String,
     val uri: Uri?,
-    val file: File?
+    val file: File?,
+    val audioSource: String? = null,
+    val sampleRate: Int? = null,
 )

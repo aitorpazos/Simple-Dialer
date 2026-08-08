@@ -50,8 +50,14 @@ class SettingsActivity : SimpleActivity() {
 
     private val binding by viewBinding(ActivitySettingsBinding::inflate)
     private val greetingManager by lazy { GreetingManager(this) }
+    private var enableRecordingAfterMicPermission = false
 
-    private val requestMicPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+    private val requestMicPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (enableRecordingAfterMicPermission) {
+            enableRecordingAfterMicPermission = false
+            setCallRecordingEnabled(granted)
+            if (!granted) toast(R.string.recording_failure_permission)
+        }
         refreshSetupGuide()
     }
 
@@ -409,13 +415,27 @@ class SettingsActivity : SimpleActivity() {
         binding.apply {
             settingsCallRecording.isChecked = config.callRecordingEnabled
             settingsCallRecordingHolder.setOnClickListener {
-                settingsCallRecording.toggle()
-                config.callRecordingEnabled = settingsCallRecording.isChecked
-                updateCallTranscriptionVisibility()
-                updateAccessibilityServiceVisibility()
-                refreshSetupGuide()
+                if (config.callRecordingEnabled) {
+                    setCallRecordingEnabled(false)
+                } else if (hasMicrophonePermission()) {
+                    setCallRecordingEnabled(true)
+                } else {
+                    // Recording previously appeared enabled even when Android had
+                    // never granted microphone access, causing every call to fail
+                    // silently. Enabling now requires the permission first.
+                    enableRecordingAfterMicPermission = true
+                    requestMicPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+                }
             }
         }
+    }
+
+    private fun setCallRecordingEnabled(enabled: Boolean) {
+        config.callRecordingEnabled = enabled
+        binding.settingsCallRecording.isChecked = enabled
+        updateCallTranscriptionVisibility()
+        updateAccessibilityServiceVisibility()
+        refreshSetupGuide()
     }
 
     private fun setupAccessibilityService() {
@@ -559,8 +579,10 @@ class SettingsActivity : SimpleActivity() {
             settingsSetupDefaultDialerHolder.beVisibleIf(visible)
             settingsSetupMicrophoneHolder.beVisibleIf(visible)
             settingsSetupNotificationsHolder.beVisibleIf(visible)
-            settingsSetupRestrictedHolder.beVisibleIf(visible && needsRestrictedSettingsStep())
-            settingsSetupAccessibilityHolder.beVisibleIf(visible)
+            // Accessibility cannot grant CAPTURE_AUDIO_OUTPUT, so it is not a
+            // recording prerequisite. Keep the legacy rows hidden.
+            settingsSetupRestrictedHolder.beVisibleIf(false)
+            settingsSetupAccessibilityHolder.beVisibleIf(false)
             settingsSetupBatteryHolder.beVisibleIf(visible)
 
             if (!visible) return
@@ -591,23 +613,7 @@ class SettingsActivity : SimpleActivity() {
             settingsSetupNotificationsHolder.alpha = if (hasNotif) 0.5f else 1.0f
             if (!hasNotif) pendingSteps++
 
-            // 4. Restricted settings (Android 13+ only)
-            val needsRestricted = needsRestrictedSettingsStep()
-            if (needsRestricted) {
-                settingsSetupRestrictedStatus.text = getString(R.string.setup_restricted_settings_needed)
-                settingsSetupRestrictedHolder.alpha = 1.0f
-                pendingSteps++
-            }
-
-            // 5. Accessibility service
-            val hasAccessibility = CallRecordingAccessibilityService.isServiceEnabled(this@SettingsActivity)
-            settingsSetupAccessibilityStatus.text = getString(
-                if (hasAccessibility) R.string.setup_accessibility_ok else R.string.setup_accessibility_needed
-            )
-            settingsSetupAccessibilityHolder.alpha = if (hasAccessibility) 0.5f else 1.0f
-            if (!hasAccessibility) pendingSteps++
-
-            // 6. Battery optimization
+            // 4. Battery optimization
             val hasBattery = isBatteryOptimizationDisabled()
             settingsSetupBatteryStatus.text = getString(
                 if (hasBattery) R.string.setup_battery_optimization_ok else R.string.setup_battery_optimization_needed
