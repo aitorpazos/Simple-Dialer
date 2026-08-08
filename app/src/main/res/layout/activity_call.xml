@@ -326,6 +326,32 @@
         android:visibility="gone">
 
         <com.simplemobiletools.commons.views.MyTextView
+            android:id="@+id/auto_answer_manual_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/big_margin"
+            android:background="@drawable/auto_answer_manual_background"
+            android:drawableStart="@drawable/ic_play_arrow_vector"
+            android:drawablePadding="@dimen/small_margin"
+            android:drawableTint="@android:color/white"
+            android:focusable="true"
+            android:gravity="center"
+            android:paddingStart="@dimen/activity_margin"
+            android:paddingTop="@dimen/normal_margin"
+            android:paddingEnd="@dimen/activity_margin"
+            android:paddingBottom="@dimen/normal_margin"
+            android:text="@string/auto_answer_manual_button"
+            android:textAllCaps="true"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/bigger_text_size"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/call_decline"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:visibility="visible" />
+
+        <com.simplemobiletools.commons.views.MyTextView
             android:id="@+id/auto_answer_countdown_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

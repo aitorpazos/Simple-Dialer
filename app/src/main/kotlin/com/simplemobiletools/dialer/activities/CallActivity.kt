@@ -32,6 +32,7 @@ import com.simplemobiletools.dialer.extensions.*
 import com.simplemobiletools.dialer.helpers.*
 import com.simplemobiletools.dialer.models.AudioRoute
 import com.simplemobiletools.dialer.models.CallContact
+import com.simplemobiletools.dialer.services.CallService
 import kotlin.math.max
 import kotlin.math.min
 
@@ -186,6 +187,14 @@ class CallActivity : SimpleActivity() {
 
         autoAnswerSkipButton.setOnClickListener {
             cancelAutoAnswerCountdownAndService()
+        }
+
+        autoAnswerManualButton.setOnClickListener {
+            val answered = (CallManager.inCallService as? CallService)?.answerWithAutoAnswer() == true
+            if (answered) {
+                autoAnswerManualButton.isEnabled = false
+                autoAnswerManualButton.beGone()
+            }
         }
 
         dialpadInclude.apply {
@@ -706,17 +715,21 @@ class CallActivity : SimpleActivity() {
 
     private fun initOutgoingCallUI() {
         enableProximitySensor()
+        binding.autoAnswerManualButton.beGone()
         binding.incomingCallHolder.beGone()
         binding.ongoingCallHolder.beVisible()
     }
 
     private fun callRinging() {
         binding.incomingCallHolder.beVisible()
+        binding.autoAnswerManualButton.isEnabled = true
+        binding.autoAnswerManualButton.beVisibleIf(config.autoAnswerMode == AUTO_ANSWER_MANUAL)
         startAutoAnswerCountdownPolling()
     }
 
     private fun callStarted() {
         enableProximitySensor()
+        binding.autoAnswerManualButton.beGone()
         hideAutoAnswerCountdownUI()
         binding.incomingCallHolder.beGone()
         binding.ongoingCallHolder.beVisible()
@@ -805,7 +818,7 @@ class CallActivity : SimpleActivity() {
      */
     private fun cancelAutoAnswerCountdownAndService() {
         hideAutoAnswerCountdownUI()
-        (CallManager.inCallService as? com.simplemobiletools.dialer.services.CallService)?.cancelAutoAnswer()
+        (CallManager.inCallService as? CallService)?.cancelAutoAnswer()
     }
 
     private val callCallback = object : CallManagerListener {

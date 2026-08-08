@@ -34,6 +34,7 @@ const val NOTIFICATION_ACTION_SHOW_TRANSCRIPTION = "notification_action_show_tra
 const val AUTO_ANSWER_NONE = 0
 const val AUTO_ANSWER_ALL = 1
 const val AUTO_ANSWER_UNKNOWN = 2
+const val AUTO_ANSWER_MANUAL = 3
 
 // Default greeting for auto-answer TTS
 const val DEFAULT_AUTO_ANSWER_GREETING = "Hello, this call is being answered automatically. Please leave your message after the tone."

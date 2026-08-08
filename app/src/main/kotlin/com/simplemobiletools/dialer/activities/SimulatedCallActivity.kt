@@ -75,8 +75,9 @@ class SimulatedCallActivity : SimpleActivity() {
         cs.incomingCallHolder.beVisible()
         cs.ongoingCallHolder.beGone()
 
-        if (config.autoAnswerMode != AUTO_ANSWER_NONE) {
-            startAutoAnswerCountdown()
+        when (config.autoAnswerMode) {
+            AUTO_ANSWER_MANUAL -> cs.autoAnswerManualButton.beVisible()
+            AUTO_ANSWER_ALL, AUTO_ANSWER_UNKNOWN -> startAutoAnswerCountdown()
         }
     }
 
@@ -115,6 +116,13 @@ class SimulatedCallActivity : SimpleActivity() {
 
         cs.autoAnswerSkipButton.setOnClickListener {
             cancelAutoAnswerCountdown()
+        }
+
+        cs.autoAnswerManualButton.setOnClickListener {
+            if (config.autoAnswerMode == AUTO_ANSWER_MANUAL && state == State.RINGING) {
+                cs.autoAnswerManualButton.isEnabled = false
+                answerCall()
+            }
         }
 
         val bgColor = getProperBackgroundColor()
@@ -291,6 +299,7 @@ class SimulatedCallActivity : SimpleActivity() {
         val cs = binding.callScreen
         cs.incomingCallHolder.beGone()
         cs.ongoingCallHolder.beVisible()
+        cs.autoAnswerManualButton.beGone()
         cs.autoAnswerCountdownLabel.beGone()
         cs.autoAnswerSkipButton.beGone()
 

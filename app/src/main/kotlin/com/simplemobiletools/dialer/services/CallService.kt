@@ -164,7 +164,7 @@ class CallService : InCallService() {
 
     private fun handleAutoAnswer(call: Call) {
         val autoAnswerMode = config.autoAnswerMode
-        if (autoAnswerMode == AUTO_ANSWER_NONE) return
+        if (autoAnswerMode == AUTO_ANSWER_NONE || autoAnswerMode == AUTO_ANSWER_MANUAL) return
 
         val shouldAnswer = { doAnswer: () -> Unit ->
             // Always run a visible countdown (minimum 1s) so the user can see
@@ -208,6 +208,24 @@ class CallService : InCallService() {
                 }
             }
         }
+    }
+
+    /**
+     * Answer a ringing incoming call through the auto-answer workflow, but only
+     * when the explicit manual auto-answer mode is selected. A regular Answer
+     * action continues to behave like a normal call and does not play the
+     * greeting or start the auto-answer recording/listen-in flow.
+     */
+    fun answerWithAutoAnswer(): Boolean {
+        if (config.autoAnswerMode != AUTO_ANSWER_MANUAL) return false
+
+        val call = CallManager.getPrimaryCall() ?: return false
+        if (call.isOutgoing() || call.getStateCompat() != Call.STATE_RINGING) return false
+
+        cancelAutoAnswer()
+        wasAutoAnswered = true
+        call.answer(VideoProfile.STATE_AUDIO_ONLY)
+        return true
     }
 
     /**

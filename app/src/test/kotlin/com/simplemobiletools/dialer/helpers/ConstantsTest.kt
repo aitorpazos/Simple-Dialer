@@ -54,8 +54,8 @@ class ConstantsTest {
 
     @Test
     fun `auto answer mode constants are distinct`() {
-        val modes = setOf(AUTO_ANSWER_NONE, AUTO_ANSWER_ALL, AUTO_ANSWER_UNKNOWN)
-        assertEquals("Auto-answer modes must be unique", 3, modes.size)
+        val modes = setOf(AUTO_ANSWER_NONE, AUTO_ANSWER_ALL, AUTO_ANSWER_UNKNOWN, AUTO_ANSWER_MANUAL)
+        assertEquals("Auto-answer modes must be unique", 4, modes.size)
     }
 
     @Test

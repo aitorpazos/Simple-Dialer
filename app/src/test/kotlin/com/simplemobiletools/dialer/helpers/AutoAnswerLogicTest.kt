@@ -10,6 +10,7 @@ import org.junit.Test
  *   - AUTO_ANSWER_NONE → never answer
  *   - AUTO_ANSWER_ALL  → always answer (known or unknown)
  *   - AUTO_ANSWER_UNKNOWN → answer only when caller is unknown
+ *   - AUTO_ANSWER_MANUAL → never answer without an explicit button press
  *
  * "Unknown" means: contact.name is empty OR contact.name == contact.number
  */
@@ -43,6 +44,12 @@ class AutoAnswerLogicTest {
     fun `mode NONE never auto-answers`() {
         assertFalse(shouldAutoAnswer(AUTO_ANSWER_NONE, "", "+1234567890"))
         assertFalse(shouldAutoAnswer(AUTO_ANSWER_NONE, "Alice", "+1234567890"))
+    }
+
+    @Test
+    fun `mode MANUAL never auto-answers without a button press`() {
+        assertFalse(shouldAutoAnswer(AUTO_ANSWER_MANUAL, "", "+1234567890"))
+        assertFalse(shouldAutoAnswer(AUTO_ANSWER_MANUAL, "Alice", "+1234567890"))
     }
 
     @Test

@@ -645,7 +645,8 @@ class SettingsActivity : SimpleActivity() {
             val items = arrayListOf(
                 RadioItem(AUTO_ANSWER_NONE, getString(R.string.auto_answer_none)),
                 RadioItem(AUTO_ANSWER_ALL, getString(R.string.auto_answer_all)),
-                RadioItem(AUTO_ANSWER_UNKNOWN, getString(R.string.auto_answer_unknown))
+                RadioItem(AUTO_ANSWER_UNKNOWN, getString(R.string.auto_answer_unknown)),
+                RadioItem(AUTO_ANSWER_MANUAL, getString(R.string.auto_answer_manual))
             )
 
             RadioGroupDialog(this@SettingsActivity, items, config.autoAnswerMode) {
@@ -659,7 +660,8 @@ class SettingsActivity : SimpleActivity() {
 
     private fun updateAutoAnswerSettingsVisibility() {
         val enabled = config.autoAnswerMode != AUTO_ANSWER_NONE
-        binding.settingsAutoAnswerDelayHolder.beVisibleIf(enabled)
+        val automatic = config.autoAnswerMode == AUTO_ANSWER_ALL || config.autoAnswerMode == AUTO_ANSWER_UNKNOWN
+        binding.settingsAutoAnswerDelayHolder.beVisibleIf(automatic)
         binding.settingsAutoAnswerGreetingHolder.beVisibleIf(enabled)
         binding.settingsPreviewGreetingHolder.beVisibleIf(enabled)
         binding.settingsListenInHolder.beVisibleIf(enabled)
@@ -1348,6 +1350,7 @@ class SettingsActivity : SimpleActivity() {
         when (config.autoAnswerMode) {
             AUTO_ANSWER_ALL -> R.string.auto_answer_all
             AUTO_ANSWER_UNKNOWN -> R.string.auto_answer_unknown
+            AUTO_ANSWER_MANUAL -> R.string.auto_answer_manual
             else -> R.string.auto_answer_none
         }
     )
