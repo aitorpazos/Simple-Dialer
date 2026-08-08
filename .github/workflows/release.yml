@@ -59,7 +59,7 @@ jobs:
 
             Fork of Simple Dialer with added features:
             - 📞 **Call Recording** — Record all calls with configurable storage folder (SAF folder picker)
-            - 🤖 **Auto-Answer** — Automatically answer calls (all / unknown callers / disabled)
+            - 🤖 **Auto-Answer** — Automatically answer all or unknown callers, or require an explicit answer-button press
             - 💬 **Custom Greeting** — Configurable TTS greeting for auto-answered calls
             - 🔊 **Greeting Preview** — Listen to what callers will hear
             - 📋 **Call Summary** — Notification summary after each call with configurable action buttons
@@ -67,7 +67,11 @@ jobs:
             - 🧪 **Simulate Call** — Test the full caller experience from Settings
 
             ### Changes in this release
-            - 🔧 **Fix TTS engine discovery** — All installed TTS engines now appear in the selector (previously some engines like Google TTS or Piper were missing)
+            - 🖐️ **Manual answer mode** — Never answer automatically unless you explicitly press the answer button
+            - 🎙️ **Reliable recording policy** — Auto mode now uses legal microphone sources first on regular Android installations
+            - 🔍 **Clear recording diagnostics** — Failed, silent, blocked, or unsaved recordings now report the actual reason
+            - 🧹 **Simpler setup** — Accessibility is no longer presented as a call-recording requirement
+            - ⚡ **Faster call details** — Recording scans no longer block the main thread
 
             ### Install
             Download the **release APK** (signed, minified).

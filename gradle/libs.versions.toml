@@ -18,8 +18,8 @@ app-build-javaVersion = "VERSION_17"
 app-build-kotlinJVMTarget = "17"
 #versioning
 app-version-appId = "com.simplemobiletools.dialer"
-app-version-versionCode = "99"
-app-version-versionName = "5.40.12"
+app-version-versionCode = "100"
+app-version-versionName = "5.41.0"
 [libraries]
 #Simple Mobile Tools
 simple-tools-commons = { module = "com.github.SimpleMobileTools:Simple-Commons", version.ref = "simple-commons" }

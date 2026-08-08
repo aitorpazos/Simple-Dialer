@@ -1,6 +1,17 @@
 Changelog
 ==========
 
+Version 5.41.0 *(2026-08-09)*
+----------------------------
+
+ * Added a manual auto-answer mode that never answers unless the user explicitly taps the answer button
+ * Improved call-recording reliability with microphone-first source selection on regular Android installations
+ * Added explicit recording failure diagnostics for missing permission, blocked background access, unavailable input, silent audio, and storage errors
+ * Removed the obsolete accessibility-service requirement for call recording
+ * Prevented empty or silent recordings from being reported as successful
+ * Improved recording lifecycle safety, foreground microphone handling, audio sample-rate fallback, and storage fallback
+ * Improved call-details performance by moving recording scans off the main thread
+
 Version 5.37.0 *(2026-04-01)*
 ----------------------------
 

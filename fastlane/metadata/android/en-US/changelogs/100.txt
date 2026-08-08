@@ -1,0 +1,5 @@
+• Added a manual answer mode that never answers unless you explicitly tap Answer.
+• Improved call recording with microphone-first automatic source selection.
+• Added clear diagnostics for blocked, silent, unavailable, or unsaved recordings.
+• Removed the obsolete accessibility-service requirement for recording.
+• Improved call-details performance and recording lifecycle reliability.
